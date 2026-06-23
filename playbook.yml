@@ -1,0 +1,8 @@
+---
+- hosts: webservers
+  become: true
+  roles:
+    - docker
+    - mysql
+    - wordpress
+    - nginx
