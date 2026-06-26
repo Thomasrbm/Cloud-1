@@ -1,0 +1,4 @@
+---
+# Variables non-sensibles (versionnées).
+project_dir: /opt/wordpress
+domain_name: localhost   # ex: mon-blog.duckdns.org si tu as un domaine
