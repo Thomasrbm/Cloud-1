@@ -1,0 +1,8 @@
+---
+# MODÈLE. Copie ce fichier en group_vars/webservers.yml et mets tes propres valeurs.
+# group_vars/webservers.yml est ignoré par git (aucun secret dans le dépôt).
+# Idéalement, chiffre-le : ansible-vault encrypt group_vars/webservers.yml
+mysql_root_password: change_me_root
+mysql_database: wordpress
+mysql_user: wp_user
+mysql_password: change_me_user
