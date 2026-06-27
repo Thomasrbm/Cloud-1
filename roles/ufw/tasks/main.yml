@@ -1,0 +1,32 @@
+---
+# Restreint l'accès public : seuls SSH (22), HTTP (80) et HTTPS (443) sont ouverts.
+
+- name: Install ufw
+  apt:
+    name: ufw
+    state: present
+    update_cache: true
+
+- name: Default deny incoming
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Default allow outgoing
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow SSH, HTTP, HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "22"
+    - "80"
+    - "443"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
