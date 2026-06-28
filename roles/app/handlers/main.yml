@@ -1,0 +1,5 @@
+---
+- name: Restart stack
+  command: docker compose up -d --remove-orphans
+  args:
+    chdir: "{{ project_dir }}"
