@@ -1,5 +1,5 @@
 ---
-# Prépare l'hôte : répertoires du projet, certificat TLS et configuration nginx.
+# Déploie la stack WordPress (mysql + wordpress-fpm + phpmyadmin + nginx) via docker compose.
 
 - name: Create project directories
   file:
@@ -28,3 +28,26 @@
     dest: "{{ project_dir }}/nginx/nginx.conf"
     mode: '0644'
   notify: Restart stack
+
+- name: Deploy .env file (secrets)
+  template:
+    src: env.j2
+    dest: "{{ project_dir }}/.env"
+    mode: '0600'
+  notify: Restart stack
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ project_dir }}/docker-compose.yml"
+    mode: '0644'
+  notify: Restart stack
+
+- name: Start the stack
+  command: docker compose up -d --remove-orphans
+  args:
+    chdir: "{{ project_dir }}"
+  register: compose_up
+  changed_when: >
+    ('Started' in compose_up.stderr) or ('Created' in compose_up.stderr)
+    or ('Recreated' in compose_up.stderr)
