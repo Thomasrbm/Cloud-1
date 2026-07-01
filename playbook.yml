@@ -1,8 +1,8 @@
 ---
-- hosts: webservers
+- name: Deploy WordPress stack (Cloud-1)
+  hosts: webservers
   become: true
   roles:
     - docker
-    - mysql
-    - wordpress
-    - nginx
+    - ufw
+    - app
