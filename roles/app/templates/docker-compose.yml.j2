@@ -37,6 +37,8 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: "3306"
+      # Sert phpMyAdmin correctement derrière nginx sur le sous-chemin /phpmyadmin/.
+      PMA_ABSOLUTE_URI: https://{{ ansible_host }}/phpmyadmin/
     networks:
       - wp_network
     # Accessible uniquement via le reverse-proxy nginx (pas de port hôte).

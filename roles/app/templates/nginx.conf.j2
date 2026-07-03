@@ -1,14 +1,15 @@
 # HTTP -> redirection HTTPS
 server {
-    listen 80;
-    server_name {{ domain_name }} pma.{{ domain_name }};
+    listen 80 default_server;
+    server_name _;
     return 301 https://$host$request_uri;
 }
 
-# WordPress en HTTPS
+# Serveur HTTPS par défaut : WordPress à la racine, phpMyAdmin sur /phpmyadmin/.
+# Accessible directement par l'IP du serveur (aucun domaine requis).
 server {
-    listen 443 ssl;
-    server_name {{ domain_name }};
+    listen 443 ssl default_server;
+    server_name _;
 
     ssl_certificate     /etc/nginx/ssl/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/key.pem;
@@ -16,6 +17,19 @@ server {
     root /var/www/html;
     index index.php;
 
+    # phpMyAdmin
+    location = /phpmyadmin {
+        return 301 /phpmyadmin/;
+    }
+    location /phpmyadmin/ {
+        proxy_pass http://phpmyadmin:80/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WordPress
     location / {
         try_files $uri $uri/ /index.php?$args;
     }
@@ -25,22 +39,5 @@ server {
         fastcgi_index index.php;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    }
-}
-
-# phpMyAdmin en HTTPS sur le sous-domaine pma.<domain>
-server {
-    listen 443 ssl;
-    server_name pma.{{ domain_name }};
-
-    ssl_certificate     /etc/nginx/ssl/cert.pem;
-    ssl_certificate_key /etc/nginx/ssl/key.pem;
-
-    location / {
-        proxy_pass http://phpmyadmin:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
