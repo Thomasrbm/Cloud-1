@@ -2,3 +2,8 @@
 # Variables non-sensibles (versionnées).
 project_dir: /opt/wordpress
 domain_name: localhost   # ex: mon-blog.duckdns.org si tu as un domaine
+
+# Ports publics du reverse-proxy nginx (80/443 = valeurs exigées par le sujet).
+# Surchargeables par hôte/groupe pour un environnement de test.
+http_port: 80
+https_port: 443

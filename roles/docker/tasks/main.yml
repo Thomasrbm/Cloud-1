@@ -1,52 +1,81 @@
 ---
-# Installe Docker Engine + le plugin Compose v2 sur un Ubuntu fraîchement provisionné
-# (le sujet garantit uniquement : Ubuntu 22.04 + SSHd + Python).
 
+# --- = début de format yamml,  on peut séparer plusieur yaml dans le meme fichier + c'est norme officielle
+
+
+# Bloc 1 : Installation des outils de base
 - name: Install prerequisite packages
-  apt:
+  apt: # apt sera la packet manager
+  # tout ce qu'on install
+
     name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    state: present
-    update_cache: true
+      - apt-transport-https # Permet à l'installateur d'aller chercher des paquets via HTTPS
+      - ca-certificates     # Gère les certificats de sécurité pour vérifier les sites web
+      - curl                # Outil pour télécharger des fichiers depuis Internet
+      - gnupg               # Permet de gérer les clés de sécurité et de chiffrement
+      - lsb-release         # Outil qui aide à détecter la version exacte d'Ubuntu
 
+    state: present          # 'present' signifie "Installe-les s'ils ne sont pas déjà là"
+    update_cache: true      # Fait un "apt update" pour rafraîchir la liste des logiciels dispos
+
+
+
+# Bloc 2 : Dossier stockage  clés de sécurité
 - name: Create keyrings directory
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
+  file: # file pour mani fichier et dossier sur le srv
+    path: /etc/apt/keyrings # Le chemin du dossier à créer
+    state: directory        # on veut un dossier
+    mode: '0755'            # perms lire/ecrire
 
+
+
+
+
+# Bloc 3 : Dl la clé  sécurité offi de Docker
+# GNU Privacy Guard (un peu comme un hash pour authentifier + garentie en tant que clef qui l'a signé)
+# hash chiffré avec clef de docker
 - name: Add Docker GPG key
-  get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: '0644'
+  get_url: # dl depuis adresse web
+    url: https://download.docker.com/linux/ubuntu/gpg # L'adresse officielle de la clé Docker
+    dest: /etc/apt/keyrings/docker.asc                # clef .asc (ASCII Armored) uniquement lettre chiffre, symbole de base lisibles
+    mode: '0644'                                      # Perms tout le monde peut lire, root peut modifier
 
+
+
+
+
+# Bloc 4 : Ajout du repo docker offi dans le ubuntu server
 - name: Add Docker apt repository
-  apt_repository:
+  apt_repository: # dl un repo
+
+    # detecte l archi, check la signature, remplace ansible_distribution_release  par la distrib d'ubuntu (ici jammy)
+    # >- =  j'écris sur plusieurs ligne mais ansible doit lire sur une longuge ligne concaténée
     repo: >-
       deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}
       signed-by=/etc/apt/keyrings/docker.asc]
       https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
-    filename: docker
-    state: present
+    filename: docker # nom fichier = /etc/apt/sources.list.d/docker.list
+    state: present   # Ajoute cette source si elle n'existe pas encore
 
+
+
+# Bloc 5 : install finale Docker/Docker Compose
 - name: Install Docker Engine and Compose plugin
   apt:
     name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
+      - docker-ce             # Le moteur principal de Docker (Community Edition)
+      - docker-ce-cli         # Les commandes en ligne (ex: taper "docker ps")
+      - containerd.io         # Le gestionnaire de bas niveau des conteneurs Linux
+      - docker-buildx-plugin  # Plugin pour optimiser la création des images
+      - docker-compose-plugin # "docker compose" (V2)
     state: present
     update_cache: true
 
+
+
+# Bloc 6 : Démarrage automatique de Docker
 - name: Ensure Docker service is enabled and running
-  service:
-    name: docker
-    state: started
-    enabled: true
+  service: # module pour arriere plan sur linux
+    name: docker   # cible service docker
+    state: started # dis de dammarer direct
+    enabled: true  # permet de redemarrer auto si reboot

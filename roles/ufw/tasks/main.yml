@@ -1,32 +1,37 @@
 ---
-# Restreint l'accès public : seuls SSH (22), HTTP (80) et HTTPS (443) sont ouverts.
 
+
+# Bloc 1 : Installation
 - name: Install ufw
   apt:
     name: ufw
     state: present
     update_cache: true
 
+# Bloc 2 : Règle de sécurité pour co entrantes
 - name: Default deny incoming
-  community.general.ufw:
-    direction: incoming
-    policy: deny
+  community.general.ufw: # Module Ansible spécifique pour configurer UFW
+    direction: incoming  # Cible tout ce qui tente d'entrer
+    policy: deny         # On ferme TOUT par défaut
 
+# Bloc 3 : Règle pour sortante
 - name: Default allow outgoing
   community.general.ufw:
     direction: outgoing
-    policy: allow
+    policy: allow        # On autorise le serveur à sortir sur Internet (ex: pour faire des mises à jour)
 
+# Bloc 4 : Les 3 exceptions
 - name: Allow SSH, HTTP, HTTPS
   community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
+    rule: allow          # exception
+    port: "{{ item }}"   # var dynamique remplie en dessous
     proto: tcp
-  loop:
-    - "22"
-    - "80"
-    - "443"
+  loop:                  # boucle qui va remplir item
+    - "22"               # ssh
+    - "80"               # http
+    - "443"              # tls https
 
+# Bloc 5 : Activation finale du pare-feu
 - name: Enable ufw
   community.general.ufw:
     state: enabled

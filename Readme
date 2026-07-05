@@ -1,0 +1,15 @@
+
+
+
+ansible-playbook playbook.yml --ask-vault-pass : 
+
+
+ansible va lire le fichier playbook + s'arrete pour demande le mdp
+
+
+
+
+
+----------------------------
+
+

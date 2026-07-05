@@ -2,7 +2,7 @@
 server {
     listen 80 default_server;
     server_name _;
-    return 301 https://$host$request_uri;
+    return 301 https://$host{% if https_port | int != 443 %}:{{ https_port }}{% endif %}$request_uri;
 }
 
 # Serveur HTTPS par défaut : WordPress à la racine, phpMyAdmin sur /phpmyadmin/.
