@@ -1,41 +1,68 @@
 ---
-# Déploie la stack WordPress (mysql + wordpress-fpm + phpmyadmin + nginx) via docker compose.
 
+# ==============================================================================
+# RÔLE PRINCIPAL D'APPLICATION (APP)
+
+# MySQL (Base de données), WordPress (Site), phpMyAdmin (Gestion) et Nginx (Proxy/TLS).
+# ==============================================================================
+
+
+# Bloc 1 : arborescence
 - name: Create project directories
-  file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0755'
+  file: # Module 'file' pour créer des structures de dossiers
+    path: "{{ item }}"   # Variable dynamique qui prend chaque ligne de la boucle ci-dessous
+    state: directory     # On demande la création de dossiers
+    mode: '0755'         # Permissions standard (root modifie, les autres lisent et entrent)
+  
+  # project_dir defini dans groups_var, all.yaml
   loop:
     - "{{ project_dir }}"
-    - "{{ project_dir }}/mysql"
-    - "{{ project_dir }}/wp"
+    - "{{ project_dir }}/mysql"   # Volume pour db (survie reboot)
+    - "{{ project_dir }}/wp"      # Volume pour fichier site (images, thèmes...)
     - "{{ project_dir }}/nginx"
-    - "{{ project_dir }}/ssl"
+    - "{{ project_dir }}/ssl"     # certificats
 
+
+
+
+# Bloc 2 : Génération auto certif TLS (HTTPS)
 - name: Generate self-signed SSL certificate
+  # > : colle tout et add un \n
   command: >
     openssl req -x509 -nodes -days 365 -newkey rsa:2048
     -keyout {{ project_dir }}/ssl/key.pem
     -out {{ project_dir }}/ssl/cert.pem
-    -subj "/C=FR/ST=Paris/L=Paris/O=42/CN={{ domain_name }}"
-  args:
-    creates: "{{ project_dir }}/ssl/cert.pem"
+    -subj "/C=FR/ST=LeHavre/L=LeHavre/O=42/CN={{ domain_name }}"
+  args:  # control en + sur une cmd
+    creates: "{{ project_dir }}/ssl/cert.pem" # si existe deja, refait pas la commande
 
+
+
+# Bloc 3 : ngninx
 - name: Deploy nginx config
-  template:
-    src: nginx.conf.j2
-    dest: "{{ project_dir }}/nginx/nginx.conf"
-    mode: '0644'
-  notify: Restart stack
+  template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
+    src: nginx.conf.j2                     # Le fichier modèle sur ton ordinateur personnel
+    dest: "{{ project_dir }}/nginx/nginx.conf" # La destination sur le serveur distant
+    mode: '0644
+  notify: Restart stack # Si la config change, Ansible appellera un "handler" pour redémarrer l'app
 
+
+
+
+
+# Bloc 4 : le .env
 - name: Deploy .env file (secrets)
   template:
     src: env.j2
     dest: "{{ project_dir }}/.env"
-    mode: '0600'
+    mode: '0600' # perm admin only 
   notify: Restart stack
 
+
+
+
+
+# Bloc 5 : copie le compose
 - name: Deploy docker-compose.yml
   template:
     src: docker-compose.yml.j2
@@ -43,11 +70,21 @@
     mode: '0644'
   notify: Restart stack
 
+
+
+# Bloc 6 : lance ou maj des docker
 - name: Start the stack
   command: docker compose up -d --remove-orphans
   args:
     chdir: "{{ project_dir }}"
-  register: compose_up
+  register: compose_up # Enregistre le texte de réponse du terminal dans une variable nommée 'compose_up'
+
+    # IDEMPOTENCE : Ansible considère par défaut qu'une tâche 'command' modifie TOUJOURS le serveur.
+
+    # Grâce à cette condition, Ansible dira "changed" (modifié) uniquement si Docker a réellement créé,
+    # démarré ou recréé un conteneur. 
+    
+    #Si tout tourne déjà parfaitement, il affichera juste "ok" (aucun changement).
   changed_when: >
     ('Started' in compose_up.stderr) or ('Created' in compose_up.stderr)
     or ('Recreated' in compose_up.stderr)

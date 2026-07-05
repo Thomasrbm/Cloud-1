@@ -1,5 +1,9 @@
 ---
+# est appelé si changement dans certaines config 
+
 - name: Restart stack
-  command: docker compose up -d --remove-orphans
+  # suppr les anciens docker zombie
+  command: docker compose up -d --remove-orphans 
   args:
+  # se met dans l'endroit ou il y a le docker compose pour pouvoir le lancer
     chdir: "{{ project_dir }}"

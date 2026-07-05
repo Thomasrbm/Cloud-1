@@ -1,9 +1,11 @@
 ---
-# Variables non-sensibles (versionnées).
-project_dir: /opt/wordpress
-domain_name: localhost   # ex: mon-blog.duckdns.org si tu as un domaine
+# group var s'applique auto dans les projet ansible sans avoir besoin de déclarer
+# all s'applique à tout le monde 
 
-# Ports publics du reverse-proxy nginx (80/443 = valeurs exigées par le sujet).
-# Surchargeables par hôte/groupe pour un environnement de test.
+# webservers que à la liste
+
+project_dir: /opt/wordpress
+domain_name: localhost
+
 http_port: 80
 https_port: 443

@@ -26,7 +26,7 @@
     rule: allow          # exception
     port: "{{ item }}"   # var dynamique remplie en dessous
     proto: tcp
-  loop:                  # boucle qui va remplir item
+  loop:                  # boucle qui va remplir item et applique le allow en tcp 
     - "22"               # ssh
     - "80"               # http
     - "443"              # tls https
