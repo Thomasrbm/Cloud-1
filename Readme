@@ -10,6 +10,19 @@ ansible va lire le fichier playbook + s'arrete pour demande le mdp
 
 
 
+
+il lit automatiquement le group_vars pour les var d'env
+
+
 ----------------------------
 
 
+ensuite il execute chaque  roles : 
+
+
+roles vont installer docker, puis config firewall  puis setup l'app en entier 
+
+on copie les templates  docker composer, nginx etc dans le cloud 
+
+
+puis  on a un handler pour le reboot en permanence. 
