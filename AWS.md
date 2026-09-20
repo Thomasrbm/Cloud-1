@@ -132,3 +132,60 @@ Les crédits tiennent donc largement la durée du projet. Réflexes :
 | SSH qui timeout | port 22 non ouvert dans le groupe de sécurité, ou IP source changée |
 | Site injoignable mais SSH OK | 80/443 absents du groupe de sécurité (UFW seul ne suffit pas) |
 | `ansible-galaxy`/module `ufw` introuvable | `ansible-galaxy collection install -r requirements.yml` oublié |
+
+---
+
+## Travailler depuis plusieurs machines (PC fixe, portable, poste 42)
+
+La clé `.pem` AWS n'est téléchargeable **qu'une fois** et n'est injectée dans
+l'instance qu'**au lancement**. Plutôt que de recopier cette clé privée partout
+(un seul secret partagé = tout à refaire si une machine est compromise), chaque
+machine garde **sa propre clé**, et on ajoute sa clé **publique** au serveur.
+
+### Sur une nouvelle machine
+
+```sh
+ssh-keygen -t ed25519 -C "portable"     # si pas déjà de clé
+cat ~/.ssh/id_ed25519.pub
+```
+
+- Colle la ligne dans `roles/ssh_access/files/<machine>.pub` (ex. `portable.pub`)
+- Commit + push
+- Relance le playbook **depuis une machine déjà autorisée** :
+  `ansible-playbook playbook.yml --ask-vault-pass`
+- Le rôle `ssh_access` ajoute la clé dans `~/.ssh/authorized_keys` de `ubuntu` :
+  la nouvelle machine peut désormais se connecter **sans le `.pem`**.
+
+Sur cette nouvelle machine, `inventory.ini` devient simplement :
+
+```ini
+server1 ansible_host=<IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_ed25519
+```
+
+### Cas particulier : poste de l'école
+
+- Ne stocke pas de clé privée durable sur un poste partagé.
+- Solution sans aucune clé locale : console AWS > EC2 > l'instance >
+  **Se connecter** > onglet **EC2 Instance Connect** → terminal SSH dans le navigateur.
+
+### Rattrapage : `.pem` perdu et aucune autre clé autorisée
+
+L'instance n'est alors plus joignable en SSH. Deux issues :
+- **EC2 Instance Connect** depuis la console (si le port 22 accepte les plages AWS) ;
+- sinon relancer une instance neuve avec une nouvelle paire de clés et rejouer
+  le playbook (rien n'est perdu : tout est décrit dans le dépôt).
+
+### WSL : où atterrit le `.pem` ?
+
+Le navigateur tourne sous Windows, donc le fichier est dans le `Downloads`
+Windows, visible depuis WSL via `/mnt/c` :
+
+```sh
+ls /mnt/c/Users/*/Downloads/cloud1-aws.pem
+cp /mnt/c/Users/<TonUser>/Downloads/cloud1-aws.pem ~/.ssh/
+chmod 400 ~/.ssh/cloud1-aws.pem
+```
+
+Toujours copier la clé dans le système de fichiers **Linux** (`~/.ssh`) : sur
+`/mnt/c`, `chmod 400` ne tient pas et `ssh` refuse la clé
+(*permissions are too open*).

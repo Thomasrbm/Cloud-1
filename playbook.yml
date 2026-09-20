@@ -10,6 +10,9 @@
   # va chercher dans le dossier roles puis task et executer le main de chaque
   # sous dossier role/task
   roles:
+    # 0. Autorise les clés publiques des autres machines (portable, poste 42)
+    - ssh_access
+
     # 1. Prépare la machine en installant le moteur Docker
     - docker
     

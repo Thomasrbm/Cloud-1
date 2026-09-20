@@ -1,0 +1,31 @@
+---
+# ==============================================================================
+# RÔLE SSH_ACCESS
+# Autorise plusieurs machines (PC fixe, portable, poste 42) à se connecter au
+# serveur, sans jamais copier de clé PRIVÉE d'une machine à l'autre.
+#
+# Principe : chaque machine garde sa propre clé privée. On ne dépose ici que les
+# clés PUBLIQUES (fichiers .pub), qui ne sont pas des secrets et peuvent vivre
+# dans le dépôt git.
+#
+# Usage : sur chaque nouvelle machine
+#   ssh-keygen -t ed25519 -C "portable"       # si pas déjà de clé
+#   cat ~/.ssh/id_ed25519.pub                 # copier la ligne
+#   -> la coller dans un fichier roles/ssh_access/files/<machine>.pub
+#   -> commit, puis relancer le playbook depuis n'importe quelle machine déjà
+#      autorisée : la nouvelle machine devient autorisée à son tour.
+# ==============================================================================
+
+# Bloc 1 : injection des clés publiques
+- name: Authorize extra SSH public keys
+  # Module officiel : écrit dans ~/.ssh/authorized_keys de l'utilisateur cible,
+  # en créant le dossier et les permissions correctes. Idempotent : une clé déjà
+  # présente n'est pas réécrite.
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user | default('ubuntu') }}"
+    key: "{{ lookup('file', item) }}"
+    state: present
+  # Parcourt tous les .pub du dossier files/ de ce rôle.
+  # Si le dossier est vide, la tâche est simplement sautée (aucune erreur).
+  with_fileglob:
+    - "*.pub"
