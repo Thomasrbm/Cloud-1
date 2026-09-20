@@ -43,7 +43,7 @@
   template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
     src: nginx.conf.j2                     # Le fichier modèle sur ton ordinateur personnel
     dest: "{{ project_dir }}/nginx/nginx.conf" # La destination sur le serveur distant
-    mode: '0644
+    mode: '0644'
   notify: Restart stack # Si la config change, Ansible appellera un "handler" pour redémarrer l'app
 
 

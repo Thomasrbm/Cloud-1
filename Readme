@@ -26,3 +26,7 @@ on copie les templates  docker composer, nginx etc dans le cloud
 
 
 puis  on a un handler pour le reboot en permanence. 
+
+----------------------------
+
+Deploiement sur AWS EC2 : voir AWS.md
