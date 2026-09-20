@@ -30,3 +30,4 @@ puis  on a un handler pour le reboot en permanence.
 ----------------------------
 
 Deploiement sur AWS EC2 : voir AWS.md
+Desinstallation totale pour rejouer la demo : ansible-playbook teardown.yml -e full_wipe=true

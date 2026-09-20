@@ -189,3 +189,53 @@ chmod 400 ~/.ssh/cloud1-aws.pem
 Toujours copier la clé dans le système de fichiers **Linux** (`~/.ssh`) : sur
 `/mnt/c`, `chmod 400` ne tient pas et `ssh` refuse la clé
 (*permissions are too open*).
+
+---
+
+## Rejouer la démo devant un correcteur
+
+`teardown.yml` remet le serveur à zéro pour redémontrer le déploiement autant de
+fois que nécessaire.
+
+### Niveau 1 — stack + données (~1 min de redéploiement)
+
+```sh
+ansible-playbook teardown.yml
+```
+
+Supprime conteneurs, images, réseaux et **toutes** les données
+(`/opt/wordpress` : site, base MySQL, certificats). Docker reste installé.
+
+### Niveau 2 — désinstallation totale (démo intégrale)
+
+```sh
+ansible-playbook teardown.yml -e full_wipe=true
+```
+
+En plus : désinstalle Docker, son dépôt apt, sa clé GPG, `/var/lib/docker`, et
+réinitialise UFW. Le serveur redevient un **Ubuntu nu** → le correcteur voit le
+playbook tout réinstaller de zéro.
+
+### Boucle de démonstration
+
+```sh
+ansible-playbook teardown.yml -e full_wipe=true      # tape "oui" à la confirmation
+ansible-playbook playbook.yml --ask-vault-pass       # tout se réinstalle
+# puis https://<IP>/ et https://<IP>/phpmyadmin/
+```
+
+Pour enchaîner sans confirmation interactive :
+
+```sh
+ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
+```
+
+### Garde-fous intégrés
+
+- confirmation `oui` obligatoire (sautée seulement si `-e confirm=oui`) ;
+- refus de supprimer un `project_dir` suspect (`/`, `/etc`, `/home`, chemin trop court…) ;
+- fonctionne même si Docker est déjà absent (tâches conditionnées, pas d'erreur) ;
+- **idempotent** : relancer le teardown sur un serveur déjà propre ne casse rien.
+
+> Le teardown ne touche ni à l'instance EC2, ni à ton `inventory.ini`, ni aux clés
+> SSH autorisées : seule l'application est détruite.
