@@ -9,3 +9,9 @@ domain_name: localhost
 
 http_port: 80
 https_port: 443
+
+# Accès root par clé SSH.
+# Exigé en soutenance : "The student must connect as root ... or login as the
+# root account". Les images cloud (AWS, GCP...) le bloquent par défaut, le rôle
+# ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
+allow_root_ssh: true

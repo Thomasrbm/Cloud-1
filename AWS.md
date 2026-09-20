@@ -40,7 +40,12 @@ EC2 > Réseau et sécurité > **Groupes de sécurité** > Créer
 
 EC2 > Instances > **Lancer une instance**
 - Nom : `cloud1`
-- AMI : **Ubuntu Server 24.04 LTS** (ou 22.04) — `x86_64`
+- AMI : **Ubuntu Server 22.04 LTS** — `x86_64`
+  - le sujet impose « an Ubuntu 22.04 LTS-like OS » : on prend la version exacte
+  - elle n'est pas dans l'onglet *Démarrage rapide* → **Parcourir d'autres AMI**,
+    chercher `ubuntu 22.04`, onglet **AMI communautaires**, éditeur *Canonical*
+  - le rôle `docker` détecte la version seule (`ansible_distribution_release`),
+    donc 24.04 ou 26.04 fonctionnent aussi — mais 22.04 est ce que le sujet demande
 - Type : **t3.micro** (2 vCPU / 1 Go, largement suffisant)
 - Paire de clés : `cloud1-aws`
 - Paramètres réseau : *Sélectionner un groupe de sécurité existant* > `cloud1-sg`
@@ -239,3 +244,33 @@ ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
 
 > Le teardown ne touche ni à l'instance EC2, ni à ton `inventory.ini`, ni aux clés
 > SSH autorisées : seule l'application est détruite.
+
+---
+
+## Connexion root (exigence de soutenance)
+
+> *« The student must connect as root using their email address or login as the
+> root account. »*
+
+Les images cloud bloquent volontairement le compte root : la clé est bien dans
+`/root/.ssh/authorized_keys`, mais précédée d'un
+`command="echo 'Please login as the user \"ubuntu\"'"` qui coupe la session.
+
+Le rôle `ssh_access` lève ce blocage au premier déploiement :
+
+- copie les clés publiques autorisées dans `/root/.ssh/authorized_keys` ;
+- retire la commande forcée de l'image cloud ;
+- force `PermitRootLogin prohibit-password` (**clé uniquement, jamais de mot de
+  passe**), y compris dans les fichiers `/etc/ssh/sshd_config.d/*.conf` qui
+  écrasent parfois le réglage principal ;
+- recharge sshd **sans couper** les sessions en cours.
+
+```sh
+ssh -i ~/.ssh/cloud1-aws.pem root@<IP_PUBLIQUE>
+```
+
+Désactivable si besoin : `allow_root_ssh: false` dans `group_vars/all.yml`.
+
+⚠️ Le tout premier `ansible-playbook` se fait forcément avec `ansible_user=ubuntu`
+(root est encore bloqué). Ensuite, tu peux basculer l'inventaire sur
+`ansible_user=root` si tu préfères.

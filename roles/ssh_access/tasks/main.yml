@@ -1,31 +1,95 @@
 ---
 # ==============================================================================
 # RÔLE SSH_ACCESS
-# Autorise plusieurs machines (PC fixe, portable, poste 42) à se connecter au
-# serveur, sans jamais copier de clé PRIVÉE d'une machine à l'autre.
 #
-# Principe : chaque machine garde sa propre clé privée. On ne dépose ici que les
-# clés PUBLIQUES (fichiers .pub), qui ne sont pas des secrets et peuvent vivre
-# dans le dépôt git.
+# 1) Autorise plusieurs machines (PC fixe, portable, poste 42) sans jamais
+#    copier de clé PRIVÉE : on ne dépose ici que des clés PUBLIQUES (.pub).
+#
+# 2) Ouvre l'accès root par clé, exigé en soutenance
+#    ("The student must connect as root ... or login as the root account").
+#    Les AMI cloud (AWS, GCP...) bloquent volontairement root : la clé est bien
+#    présente dans /root/.ssh/authorized_keys mais précédée d'un
+#    command="echo 'Please login as the user ubuntu'" qui tue la session.
+#    On retire ce garde-fou pour que `ssh root@<IP>` fonctionne.
 #
 # Usage : sur chaque nouvelle machine
-#   ssh-keygen -t ed25519 -C "portable"       # si pas déjà de clé
-#   cat ~/.ssh/id_ed25519.pub                 # copier la ligne
-#   -> la coller dans un fichier roles/ssh_access/files/<machine>.pub
-#   -> commit, puis relancer le playbook depuis n'importe quelle machine déjà
-#      autorisée : la nouvelle machine devient autorisée à son tour.
+#   ssh-keygen -t ed25519 -C "portable"
+#   cat ~/.ssh/id_ed25519.pub   -> coller dans roles/ssh_access/files/<machine>.pub
 # ==============================================================================
 
-# Bloc 1 : injection des clés publiques
-- name: Authorize extra SSH public keys
-  # Module officiel : écrit dans ~/.ssh/authorized_keys de l'utilisateur cible,
-  # en créant le dossier et les permissions correctes. Idempotent : une clé déjà
-  # présente n'est pas réécrite.
+
+# ------------------------------------------------------------------------------
+# Bloc 1 : clés publiques supplémentaires pour l'utilisateur de déploiement
+# ------------------------------------------------------------------------------
+- name: Authorize extra SSH public keys for the deploy user
+  # Écrit dans ~/.ssh/authorized_keys en créant dossier et permissions.
+  # Idempotent : une clé déjà présente n'est pas réécrite.
   ansible.posix.authorized_key:
     user: "{{ ansible_user | default('ubuntu') }}"
     key: "{{ lookup('file', item) }}"
     state: present
-  # Parcourt tous les .pub du dossier files/ de ce rôle.
-  # Si le dossier est vide, la tâche est simplement sautée (aucune erreur).
+  # Tous les .pub du dossier files/ de ce rôle. Dossier vide = tâche sautée.
   with_fileglob:
     - "*.pub"
+
+
+# ------------------------------------------------------------------------------
+# Bloc 2 : accès root par clé (soutenance)
+# ------------------------------------------------------------------------------
+- name: Configure root SSH access
+  when: allow_root_ssh | bool
+  block:
+
+    # 2a. Les mêmes clés publiques, mais pour le compte root
+    - name: Authorize public keys for root
+      ansible.posix.authorized_key:
+        user: root
+        key: "{{ lookup('file', item) }}"
+        state: present
+      with_fileglob:
+        - "*.pub"
+
+    - name: Check root authorized_keys
+      stat:
+        path: /root/.ssh/authorized_keys
+      register: root_keys
+
+    # 2b. Retire le command="echo 'Please login as the user ubuntu'" des AMI
+    #     cloud, qui empêche toute session root (la clé .pem de l'instance
+    #     redevient utilisable directement en root).
+    - name: Strip the cloud-image forced command blocking root login
+      replace:
+        path: /root/.ssh/authorized_keys
+        # Tout ce qui précède le type de clé sur la ligne est supprimé.
+        regexp: '^.*?((?:ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-\S+)\s)'
+        replace: '\1'
+      when: root_keys.stat.exists
+
+    # 2c. Autorise root par clé uniquement (jamais par mot de passe).
+    #     Valeur par défaut d'Ubuntu, mais on la force pour être portable
+    #     d'un fournisseur à l'autre.
+    - name: Permit root login by key only
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?\s*PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+        validate: 'sshd -t -f %s'
+      notify: Restart sshd
+
+    # 2d. Certaines images ré-imposent leur réglage via un fichier inclus
+    #     (/etc/ssh/sshd_config.d/*.conf) qui gagne sur le fichier principal.
+    - name: Find sshd drop-in overrides
+      find:
+        paths: /etc/ssh/sshd_config.d
+        patterns: '*.conf'
+      register: sshd_dropins
+
+    - name: Neutralize PermitRootLogin=no in drop-in overrides
+      replace:
+        path: "{{ item.path }}"
+        regexp: '^\s*PermitRootLogin\s+no\s*$'
+        replace: 'PermitRootLogin prohibit-password'
+      loop: "{{ sshd_dropins.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      notify: Restart sshd
