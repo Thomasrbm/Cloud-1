@@ -50,6 +50,10 @@ ansible-vault edit group_vars/webservers.yml
 ssh -i ~/.ssh/cloud1-aws.pem ubuntu@<IP_PUBLIQUE>     # ssh direct
 ansible -m ping webservers                            # doit repondre "pong"
 
+# Connexion ROOT (exigee en soutenance) : disponible APRES le premier
+# deploiement, le role ssh_access debloque le compte root sur l'image cloud.
+ssh -i ~/.ssh/cloud1-aws.pem root@<IP_PUBLIQUE>
+
 
 --------------------------------------------------------------------------------
  3. DEPLOIEMENT
@@ -130,7 +134,7 @@ docker exec -it <mysql_id> mysql -u root -p   # acces direct a la base
 
 # Console AWS (region eu-north-1 / Stockholm)
 #   EC2 > Paires de cles > Creer          -> cloud1-aws, ED25519, format .pem
-#   EC2 > Instances > Lancer une instance -> Ubuntu 24.04 LTS, t3.micro, 20 Gio gp3
+#   EC2 > Instances > Lancer une instance -> Ubuntu 22.04 LTS, t3.micro, 20 Gio gp3
 #        Parametres reseau : cocher "Autoriser HTTP" + "Autoriser HTTPS", SSH = Mon IP
 #   EC2 > Instances > cloud1              -> copier l'adresse IPv4 publique
 #   EC2 > Adresses IP Elastic > Allouer   -> Associer a cloud1 (IP fixe, optionnel)
