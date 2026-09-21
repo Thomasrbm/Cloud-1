@@ -9,12 +9,16 @@
 #   1) Standard  : supprime les conteneurs, les images et TOUTES les données
 #                  (site, base MySQL, certificats). Docker reste installé.
 #                  -> redéploiement en ~1 min
-#      ansible-playbook teardown.yml
+#      ansible-playbook teardown.yml --ask-vault-pass
 #
 #   2) Total     : en plus, désinstalle Docker, son dépôt apt, sa clé GPG et
 #                  réinitialise le pare-feu. Le serveur redevient un Ubuntu nu.
 #                  -> redéploiement complet, démo intégrale du playbook
-#      ansible-playbook teardown.yml -e full_wipe=true
+#      ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true
+#
+# --ask-vault-pass est requis meme si ce playbook n'utilise aucun secret :
+# il cible le groupe webservers, donc Ansible charge group_vars/webservers.yml,
+# qui est chiffre. Sans le mot de passe il refuse de demarrer.
 #
 # ⚠️ DESTRUCTIF : toutes les données du site sont perdues (c'est le but).
 # ==============================================================================
