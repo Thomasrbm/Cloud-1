@@ -1,4 +1,4 @@
-Depuis ~/Cloud-1. Mot de passe vault : Cloud1Vault2026
+Depuis ~/Cloud-1.
 
 LANCER
   ansible-playbook playbook.yml --ask-vault-pass
