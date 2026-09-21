@@ -15,3 +15,12 @@ https_port: 443
 # root account". Les images cloud (AWS, GCP...) le bloquent par défaut, le rôle
 # ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
 allow_root_ssh: true
+
+# --- WordPress ---------------------------------------------------------------
+# Installe automatiquement par wp-cli (role app) : le site est pret a l'emploi
+# des la fin du playbook, sans passer par le formulaire d'installation.
+# wp_admin_password est un secret : il vit dans group_vars/webservers.yml (vault).
+wp_site_url: "https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}"
+wp_site_title: "Cloud-1"
+wp_admin_user: thomas
+wp_admin_email: admin@example.com

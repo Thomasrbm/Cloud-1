@@ -59,6 +59,29 @@ services:
     networks:
       - wp_network
 
+  # Outil en ligne de commande WordPress. 'profiles' l'empeche de demarrer avec
+  # la stack : il n'est lance qu'a la demande, par 'docker compose run wpcli ...'
+  # (conteneur ephemere, supprime des la commande terminee).
+  wpcli:
+    image: wordpress:cli
+    profiles:
+      - tools
+    depends_on:
+      - mysql
+      - wordpress
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      # Meme volume que WordPress : wp-cli agit sur les memes fichiers.
+      - {{ project_dir }}/wp:/var/www/html
+    networks:
+      - wp_network
+    # UID/GID de www-data : les fichiers crees restent lisibles par php-fpm.
+    user: "33:33"
+
 networks:
   wp_network:
     driver: bridge

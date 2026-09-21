@@ -6,3 +6,6 @@ mysql_root_password: change_me_root
 mysql_database: wordpress
 mysql_user: wp_user
 mysql_password: change_me_user
+
+# Mot de passe du compte administrateur WordPress
+wp_admin_password: change_me_admin

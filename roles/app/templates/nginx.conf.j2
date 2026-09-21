@@ -39,5 +39,9 @@ server {
         fastcgi_index index.php;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        # nginx termine le TLS et parle en clair a php-fpm : sans ce parametre
+        # WordPress se croit en HTTP alors que son URL est en HTTPS, ce qui
+        # provoque une boucle de redirection dans /wp-admin.
+        fastcgi_param HTTPS on;
     }
 }
