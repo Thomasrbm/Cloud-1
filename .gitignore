@@ -3,3 +3,6 @@ group_vars/webservers.yml
 *.key
 secret.txt
 secrets.txt
+mdp.txt
+vault_pass.txt
+cloud1-secrets.txt
