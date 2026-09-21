@@ -1,0 +1,20 @@
+Oui : on ecrit d'abord les mots de passe EN CLAIR dans le .yml,
+puis on chiffre le fichier sur place.
+
+  nano group_vars/webservers.yml          # valeurs en clair
+  ansible-vault encrypt group_vars/webservers.yml
+  head -1 group_vars/webservers.yml       # $ANSIBLE_VAULT;1.1;AES256
+
+Le fichier est remplace par sa version chiffree : plus rien en clair sur le disque.
+
+Ce que fait le chiffrement :
+  mot de passe du vault -> PBKDF2-HMAC-SHA256 (+ sel aleatoire) -> cle
+  contenu -> AES-256-CTR + HMAC-SHA256 (integrite) -> ecrit en hexadecimal
+  Le mot de passe n'est stocke nulle part : perdu = irrecuperable.
+
+Au deploiement, --ask-vault-pass dechiffre en memoire vive.
+Le fichier sur le disque reste chiffre.
+
+  ansible-vault view group_vars/webservers.yml    # lire
+  ansible-vault edit group_vars/webservers.yml    # modifier
+  ansible-vault rekey group_vars/webservers.yml   # changer le mot de passe
