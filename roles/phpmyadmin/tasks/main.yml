@@ -1,0 +1,22 @@
+---
+# ==============================================================================
+# ROLE PHPMYADMIN : l'interface d'administration de MySQL, isolee de la base.
+# Deployable seule :  ansible-playbook playbook.yml --tags phpmyadmin
+# ==============================================================================
+
+- name: Deploy the phpMyAdmin compose file
+  template:
+    src: compose.phpmyadmin.yml.j2
+    dest: "{{ project_dir }}/compose.phpmyadmin.yml"
+    mode: '0644'
+
+- name: Start phpMyAdmin
+  command: >-
+    docker compose -f docker-compose.yml -f compose.db.yml
+    -f compose.phpmyadmin.yml up -d phpmyadmin
+  args:
+    chdir: "{{ project_dir }}"
+  register: pma_up
+  changed_when: >
+    ('Started' in pma_up.stderr) or ('Created' in pma_up.stderr)
+    or ('Recreated' in pma_up.stderr)

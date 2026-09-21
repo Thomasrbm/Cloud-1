@@ -1,0 +1,16 @@
+# Composant BASE DE DONNEES. Depose par le role Ansible `db`.
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - wp_network
+    # Aucune section `ports:` : MySQL n'ecoute que sur le reseau interne
+    # wp_network, sur 3306. Injoignable depuis Internet, meme si ufw tombait.

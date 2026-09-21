@@ -1,0 +1,58 @@
+---
+# ==============================================================================
+# ROLE PROXY : nginx, le TLS, et la convergence finale de la stack.
+# C'est le seul composant expose sur Internet (80 et 443).
+# ==============================================================================
+
+- name: Create nginx and ssl directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ project_dir }}/nginx"
+    - "{{ project_dir }}/ssl"
+
+# `creates:` rend la tache idempotente : le certificat n'est genere qu'une fois.
+- name: Generate self-signed SSL certificate
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout {{ project_dir }}/ssl/key.pem
+    -out {{ project_dir }}/ssl/cert.pem
+    -subj "/C=FR/ST=LeHavre/L=LeHavre/O=42/CN={{ domain_name }}"
+  args:
+    creates: "{{ project_dir }}/ssl/cert.pem"
+
+- name: Deploy nginx config
+  template:
+    src: nginx.conf.j2
+    dest: "{{ project_dir }}/nginx/nginx.conf"
+    mode: '0644'
+  notify: Restart nginx
+
+- name: Deploy the proxy compose file
+  template:
+    src: compose.proxy.yml.j2
+    dest: "{{ project_dir }}/compose.proxy.yml"
+    mode: '0644'
+
+- name: Start nginx
+  command: docker compose up -d nginx
+  args:
+    chdir: "{{ project_dir }}"
+  register: nginx_up
+  changed_when: >
+    ('Started' in nginx_up.stderr) or ('Created' in nginx_up.stderr)
+    or ('Recreated' in nginx_up.stderr)
+
+# Dernier role du playbook : une passe complete garantit que les 4 services
+# correspondent bien aux fichiers compose, et supprime les conteneurs orphelins.
+# Commande nue : elle lit COMPOSE_FILE dans le .env et voit donc toute la stack.
+- name: Converge the whole stack
+  command: docker compose up -d --remove-orphans
+  args:
+    chdir: "{{ project_dir }}"
+  register: stack_up
+  changed_when: >
+    ('Started' in stack_up.stderr) or ('Created' in stack_up.stderr)
+    or ('Recreated' in stack_up.stderr)

@@ -1,0 +1,21 @@
+# Composant REVERSE-PROXY / TLS. Depose par le role Ansible `proxy`.
+services:
+  nginx:
+    image: nginx:alpine
+    restart: always
+    depends_on:
+      - wordpress
+      - phpmyadmin
+    ports:
+      - "{{ http_port }}:80"
+      - "{{ https_port }}:443"
+    volumes:
+      # Configuration et certificats : montes en lecture seule (:ro).
+      - {{ project_dir }}/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - {{ project_dir }}/ssl:/etc/nginx/ssl:ro
+      # Memes fichiers que WordPress : nginx sert les images/CSS directement,
+      # sans passer par PHP.
+      - wp_data:/var/www/html
+    networks:
+      - wp_network
+    # SEUL service a publier des ports. Tout le reste est interne.

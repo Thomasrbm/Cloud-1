@@ -1,0 +1,15 @@
+# Composant ADMINISTRATION DE LA BASE. Depose par le role Ansible `phpmyadmin`.
+services:
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: "3306"
+      # Sert phpMyAdmin correctement derriere nginx sur le sous-chemin /phpmyadmin/.
+      PMA_ABSOLUTE_URI: https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}/phpmyadmin/
+    networks:
+      - wp_network
+    # Aucun port publie : joignable uniquement via le reverse-proxy nginx.
