@@ -16,6 +16,17 @@ https_port: 443
 # ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
 allow_root_ssh: true
 
+# --- Composition de la stack -------------------------------------------------
+# Chaque composant apporte son propre fichier compose ; Docker les fusionne
+# dans cet ordre. La liste est ecrite dans le .env (variable COMPOSE_FILE), ce
+# qui permet a un simple `docker compose ps` de voir les 4 services d'un coup.
+compose_files:
+  - docker-compose.yml       # socle : reseau + volumes nommes (role stack)
+  - compose.db.yml           # MySQL                           (role db)
+  - compose.wordpress.yml    # php-fpm + wp-cli                (role wordpress)
+  - compose.phpmyadmin.yml   # phpMyAdmin                      (role phpmyadmin)
+  - compose.proxy.yml        # nginx + TLS                     (role proxy)
+
 # --- WordPress ---------------------------------------------------------------
 # Installe automatiquement par wp-cli (role app) : le site est pret a l'emploi
 # des la fin du playbook, sans passer par le formulaire d'installation.

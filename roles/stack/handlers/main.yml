@@ -1,0 +1,8 @@
+---
+# Un changement de secret ou de reseau impose de RECREER les conteneurs :
+# `up -d` seul ne suffit pas, les variables d'environnement sont figees au
+# lancement du conteneur.
+- name: Recreate stack
+  command: docker compose up -d --force-recreate --remove-orphans
+  args:
+    chdir: "{{ project_dir }}"

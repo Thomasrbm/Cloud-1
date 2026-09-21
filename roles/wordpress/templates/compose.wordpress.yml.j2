@@ -1,0 +1,39 @@
+# Composant APPLICATIF (PHP). Depose par le role Ansible `wordpress`.
+services:
+  wordpress:
+    image: wordpress:php8.1-fpm
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - wp_network
+    # Variante -fpm : PHP seul, sans serveur web embarque. C'est nginx qui
+    # ecoute sur 80/443 et transmet le PHP ici, sur 9000 (fastcgi), en interne.
+
+  # wp-cli : outil en ligne de commande. `profiles` l'empeche de demarrer avec
+  # la stack, il n'est lance qu'a la demande et disparait aussitot (--rm).
+  wpcli:
+    image: wordpress:cli
+    profiles:
+      - tools
+    depends_on:
+      - mysql
+      - wordpress
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - wp_network
+    # UID/GID de www-data : les fichiers crees restent lisibles par php-fpm.
+    user: "33:33"

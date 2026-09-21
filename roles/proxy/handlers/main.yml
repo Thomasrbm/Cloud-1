@@ -1,0 +1,7 @@
+---
+# nginx.conf est monte en bind mount : modifier le fichier ne suffit pas,
+# il faut relancer le conteneur pour que nginx relise sa configuration.
+- name: Restart nginx
+  command: docker compose restart nginx
+  args:
+    chdir: "{{ project_dir }}"

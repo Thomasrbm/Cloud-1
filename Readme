@@ -1,33 +1,45 @@
+Cloud-1 : deploiement d'une stack WordPress par Ansible, en une commande.
 
 
+LANCER
+  ansible-playbook playbook.yml --ask-vault-pass
 
-ansible-playbook playbook.yml --ask-vault-pass : 
-
-
-ansible va lire le fichier playbook + s'arrete pour demande le mdp
-
-
-
+  Ansible lit playbook.yml, s'arrete pour demander le mot de passe du vault,
+  puis charge automatiquement group_vars/ (all.yml en clair, webservers.yml
+  chiffre) et execute les roles dans l'ordre.
 
 
+LES ROLES
 
-il lit automatiquement le group_vars pour les var d'env
+  Preparation de la machine
+    ssh_access   cles publiques des autres machines + acces root par cle
+    docker       depot officiel, moteur Docker et plugin compose
+    ufw          deny par defaut, seuls 22 / 80 / 443 ouverts
+
+  Un role = un composant de la stack
+    stack        dossier projet, .env (secrets), reseau et volumes nommes
+    db           MySQL           (aucun port publie)
+    wordpress    php-fpm + installation du site par wp-cli
+    phpmyadmin   administration de la base
+    proxy        nginx + TLS     (le seul expose sur Internet)
+
+  Chaque composant depose son propre fichier compose ; Docker les fusionne
+  grace a la variable COMPOSE_FILE ecrite dans le .env. Une partie se deploie
+  donc seule :
+    ansible-playbook playbook.yml --tags db --ask-vault-pass
 
 
-----------------------------
+IDEMPOTENCE
+  Rejouer le playbook ne recree rien : `creates:` sur le certificat,
+  `changed_when` sur les commandes docker, `core is-installed` avant
+  d'installer WordPress.
 
 
-ensuite il execute chaque  roles : 
+AUTRES FICHIERS
+  CORREC.txt      toutes les commandes de la soutenance
+  SECRETS.txt     generer, chiffrer et utiliser le vault
+  CONTAINERS.txt  volumes, images, orchestration : les reponses de la grille
+  AWS.md          creation et configuration de l'instance EC2
 
-
-roles vont installer docker, puis config firewall  puis setup l'app en entier 
-
-on copie les templates  docker composer, nginx etc dans le cloud 
-
-
-puis  on a un handler pour le reboot en permanence. 
-
-----------------------------
-
-Deploiement sur AWS EC2 : voir AWS.md
-Desinstallation totale pour rejouer la demo : ansible-playbook teardown.yml -e full_wipe=true
+  Desinstallation totale pour rejouer la demo :
+    ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true
