@@ -1,3 +1,5 @@
 group_vars/webservers.yml
 *.pem
 *.key
+secret.txt
+secrets.txt
