@@ -13,8 +13,10 @@ VERIFIER (depuis ma machine, sans se connecter au serveur)
   curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
 
 SUPPRIMER
-  ansible-playbook teardown.yml                    (stack + donnees)
-  ansible-playbook teardown.yml -e full_wipe=true  (+ Docker et ufw : Ubuntu nu)
+  ansible-playbook teardown.yml --ask-vault-pass                   (stack + donnees)
+  ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true (+ Docker et ufw)
+
+  # sans confirmation a taper : ajouter  -e confirm=oui
 
 MACHINE NEUVE (sinon rien a faire)
   git clone https://github.com/Thomasrbm/Cloud-1.git
