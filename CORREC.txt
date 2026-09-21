@@ -2,7 +2,10 @@ Depuis ~/Cloud-1.
 
 LANCER
   ansible-playbook playbook.yml --ask-vault-pass
-  -> https://13.60.218.238/  et  https://13.60.218.238/phpmyadmin/
+
+  # puis dans le navigateur :
+  # https://13.60.218.238/             WordPress
+  # https://13.60.218.238/phpmyadmin/  phpMyAdmin
 
 SUPPRIMER
   ansible-playbook teardown.yml                    (stack + donnees)
