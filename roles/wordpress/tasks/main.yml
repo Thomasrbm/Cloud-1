@@ -47,12 +47,16 @@
     msg: "WordPress n'a pas fini de s'extraire. Verifier : docker compose logs wordpress"
   when: wp_files.rc != 0
 
+# On appelle explicitement `wp` : l'entrypoint de l'image wordpress:cli ne
+# prefixe la commande par `wp` que si le premier argument commence par un
+# tiret. Sans lui, il tente d'executer le binaire `core`, qui n'existe pas.
+#
 # 'core is-installed' renvoie 0 si oui, 1 sinon : c'est ce test qui rend
 # l'installation idempotente. Relancer le playbook ne reinstalle rien.
 - name: Check whether WordPress is already installed
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
-    -f compose.wordpress.yml --profile tools run --rm -T wpcli core is-installed
+    -f compose.wordpress.yml --profile tools run --rm -T wpcli wp core is-installed
   args:
     chdir: "{{ project_dir }}"
   register: wp_is_installed
@@ -62,7 +66,7 @@
 - name: Install WordPress
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
-    -f compose.wordpress.yml --profile tools run --rm -T wpcli core install
+    -f compose.wordpress.yml --profile tools run --rm -T wpcli wp core install
     --url={{ wp_site_url }}
     --title={{ wp_site_title }}
     --admin_user={{ wp_admin_user }}
