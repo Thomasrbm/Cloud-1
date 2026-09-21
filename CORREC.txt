@@ -1,64 +1,19 @@
-================================================================================
- CLOUD-1 — COMMANDES
- Tout se lance depuis ~/Cloud-1 sur MA machine, jamais sur le serveur.
- Mot de passe vault : Cloud1Vault2026
-================================================================================
+Depuis ~/Cloud-1. Mot de passe vault : Cloud1Vault2026
 
---- INSTALLER (une fois par machine) ------------------------------------------
+LANCER
+  ansible-playbook playbook.yml --ask-vault-pass
+  -> https://13.60.218.238/  et  https://13.60.218.238/phpmyadmin/
 
-git clone https://github.com/Thomasrbm/Cloud-1.git
-cd Cloud-1
-sudo apt update
-sudo apt install -y ansible
-ansible-galaxy collection install -r requirements.yml
+SUPPRIMER
+  ansible-playbook teardown.yml                    (stack + donnees)
+  ansible-playbook teardown.yml -e full_wipe=true  (+ Docker et ufw : Ubuntu nu)
 
-# group_vars/webservers.yml n'est PAS dans git (secrets).
-# Le copier depuis une machine qui l'a (cle USB, scp) :
-cp /media/usb/webservers.yml group_vars/webservers.yml
-head -1 group_vars/webservers.yml        # doit afficher $ANSIBLE_VAULT;1.1;AES256
+MACHINE NEUVE (sinon rien a faire)
+  git clone https://github.com/Thomasrbm/Cloud-1.git
+  cd Cloud-1
+  sudo apt install -y ansible
+  ansible-galaxy collection install -r requirements.yml
+  cp <cle_usb>/webservers.yml group_vars/webservers.yml   # pas dans git : secrets
 
-
---- DEPLOYER -------------------------------------------------------------------
-
-ansible -m ping webservers
-ansible-playbook playbook.yml --ask-vault-pass
-
-
---- VERIFIER -------------------------------------------------------------------
-
-https://13.60.218.238/
-https://13.60.218.238/phpmyadmin/
-
-ssh root@13.60.218.238
-docker ps
-ufw status verbose
-exit
-
-
---- SUPPRIMER ------------------------------------------------------------------
-
-ansible-playbook teardown.yml                          # stack + donnees
-ansible-playbook teardown.yml -e full_wipe=true        # + Docker, ufw : Ubuntu nu
-
-
---- DEMO CORRECTEUR (reset + redeploiement complet) ----------------------------
-
-ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
-ansible-playbook playbook.yml --ask-vault-pass
-
-
---- SI L'IP A CHANGE -----------------------------------------------------------
-
-sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini
-
-
---- AJOUTER UNE MACHINE --------------------------------------------------------
-
-cat ~/.ssh/id_ed25519.pub
-# coller dans roles/ssh_access/files/<machine>.pub
-git add roles/ssh_access/files/<machine>.pub
-git commit -m "add: cle publique <machine>"
-git push
-ansible-playbook playbook.yml --ask-vault-pass
-
-================================================================================
+SI L'IP A CHANGE
+  sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini
