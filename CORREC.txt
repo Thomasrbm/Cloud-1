@@ -1,233 +1,64 @@
 ================================================================================
- CLOUD-1 — TOUTES LES COMMANDES
+ CLOUD-1 — COMMANDES
+ Tout se lance depuis ~/Cloud-1 sur MA machine, jamais sur le serveur.
+ Mot de passe vault : Cloud1Vault2026
 ================================================================================
 
---------------------------------------------------------------------------------
- 0. UNE SEULE FOIS PAR MACHINE
---------------------------------------------------------------------------------
+--- INSTALLER (une fois par machine) ------------------------------------------
 
-# --- Installer ansible ---
-sudo apt update
-sudo apt install -y ansible
-
-# --- Cloner le projet (dans le home Linux, PAS dans /mnt/c sous WSL) ---
-cd ~
 git clone https://github.com/Thomasrbm/Cloud-1.git
 cd Cloud-1
-
-# --- Installer les collections ansible (ufw + authorized_key) ---
+sudo apt update
+sudo apt install -y ansible
 ansible-galaxy collection install -r requirements.yml
 
-# --- Cle SSH : 2 cas ---
-
-# CAS 1 : tu utilises la cle .pem telechargee depuis AWS
-#   sous WSL le fichier est dans le Downloads WINDOWS, visible via /mnt/c
-ls /mnt/c/Users/*/Downloads/cloud1-aws.pem
-mkdir -p ~/.ssh
-cp /mnt/c/Users/User/Downloads/cloud1-aws.pem ~/.ssh/
-chmod 400 ~/.ssh/cloud1-aws.pem
-
-# CAS 2 : tu utilises ta propre cle SSH de la machine
-ls -l ~/.ssh/*.pub
-ssh-keygen -t ed25519 -C "nom-de-la-machine"     # seulement si tu n'en as pas
-cat ~/.ssh/id_ed25519.pub
-#   -> coller la ligne dans roles/ssh_access/files/<machine>.pub, commit, push
-#   -> puis relancer le playbook depuis une machine DEJA autorisee
+# group_vars/webservers.yml n'est PAS dans git (secrets).
+# Le copier depuis une machine qui l'a (cle USB, scp) :
+cp /media/usb/webservers.yml group_vars/webservers.yml
+head -1 group_vars/webservers.yml        # doit afficher $ANSIBLE_VAULT;1.1;AES256
 
 
---------------------------------------------------------------------------------
- 1. CONFIGURATION DU PROJET
---------------------------------------------------------------------------------
+--- DEPLOYER -------------------------------------------------------------------
 
-# --- Mettre l'IP PUBLIQUE de l'instance EC2 dans l'inventaire ---
-#   IP publique  = celle affichee dans la console EC2      -> a utiliser
-#   IP privee    = 172.31.x.x vue dans "ip a" sur le serveur -> JAMAIS
+ansible -m ping webservers
+ansible-playbook playbook.yml --ask-vault-pass
 
-# L'IP de l'instance actuelle est DEJA dans inventory.ini : 13.60.218.238
-cat inventory.ini
 
-# --- A faire seulement si l'IP a change (instance arretee/redemarree) ---
-nano inventory.ini
-#   ou, en une commande :
+--- VERIFIER -------------------------------------------------------------------
+
+https://13.60.218.238/
+https://13.60.218.238/phpmyadmin/
+
+ssh root@13.60.218.238
+docker ps
+ufw status verbose
+exit
+
+
+--- SUPPRIMER ------------------------------------------------------------------
+
+ansible-playbook teardown.yml                          # stack + donnees
+ansible-playbook teardown.yml -e full_wipe=true        # + Docker, ufw : Ubuntu nu
+
+
+--- DEMO CORRECTEUR (reset + redeploiement complet) ----------------------------
+
+ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
+ansible-playbook playbook.yml --ask-vault-pass
+
+
+--- SI L'IP A CHANGE -----------------------------------------------------------
+
 sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini
 
-# --- A faire seulement si tu utilises une autre cle SSH ---
-sed -i 's|~/.ssh/id_ed25519|~/.ssh/cloud1-aws.pem|' inventory.ini
 
-# --- Creer les secrets (mots de passe MySQL) ---
-cp group_vars/webservers.yml.example group_vars/webservers.yml
-nano group_vars/webservers.yml
+--- AJOUTER UNE MACHINE --------------------------------------------------------
 
-# --- Chiffrer les secrets ---
-ansible-vault encrypt group_vars/webservers.yml
-
-# --- Voir / modifier les secrets plus tard ---
-ansible-vault view group_vars/webservers.yml
-ansible-vault edit group_vars/webservers.yml
-
-# ATTENTION : les 4 valeurs doivent etre IDENTIQUES sur toutes tes machines.
-# MySQL est initialise avec ces mots de passe au 1er deploiement ; redeployer
-# avec d'autres valeurs casse la connexion WordPress <-> base.
-
-
---------------------------------------------------------------------------------
- 2. TEST DE CONNEXION
---------------------------------------------------------------------------------
-
-ssh -i ~/.ssh/cloud1-aws.pem ubuntu@<IP_PUBLIQUE>     # ssh direct
-ansible -m ping webservers                            # doit repondre "pong"
-
-# Connexion ROOT (exigee en soutenance) : disponible APRES le premier
-# deploiement, le role ssh_access debloque le compte root sur l'image cloud.
-ssh -i ~/.ssh/cloud1-aws.pem root@<IP_PUBLIQUE>
-
-
---------------------------------------------------------------------------------
- 3. DEPLOIEMENT
---------------------------------------------------------------------------------
-
-ansible-playbook playbook.yml --ask-vault-pass
-
-# Options utiles
-ansible-playbook playbook.yml --ask-vault-pass --check    # simulation (dry-run)
-ansible-playbook playbook.yml --ask-vault-pass -v         # mode verbeux
-ansible-playbook playbook.yml --ask-vault-pass --tags app # seulement le role app
-
-# Resultat dans le navigateur
-#   https://<IP_PUBLIQUE>/              -> WordPress
-#   https://<IP_PUBLIQUE>/phpmyadmin/   -> phpMyAdmin
-#   (certificat auto-signe : "Avance" > "Continuer")
-
-
---------------------------------------------------------------------------------
- 4. DESINSTALLATION / RESET (pour rejouer la demo)
---------------------------------------------------------------------------------
-
-# Niveau 1 : supprime conteneurs, images et TOUTES les donnees. Docker reste.
-ansible-playbook teardown.yml
-
-# Niveau 2 : desinstalle aussi Docker, son depot apt, sa cle GPG, reset ufw.
-#            Le serveur redevient un Ubuntu nu.
-ansible-playbook teardown.yml -e full_wipe=true
-
-# Sans confirmation interactive (pour enchainer)
-ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
-
-# BOUCLE DE DEMONSTRATION COMPLETE
-ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
-ansible-playbook playbook.yml --ask-vault-pass
-
-
---------------------------------------------------------------------------------
- 5. AJOUTER UNE MACHINE (portable, poste 42)
---------------------------------------------------------------------------------
-
-# Sur la NOUVELLE machine : generer sa propre cle
-ssh-keygen -t ed25519 -C "portable"
 cat ~/.ssh/id_ed25519.pub
-
-# Coller la ligne dans un nouveau fichier :
-#   roles/ssh_access/files/portable.pub
-git add roles/ssh_access/files/portable.pub
-git commit -m "add: cle publique portable"
+# coller dans roles/ssh_access/files/<machine>.pub
+git add roles/ssh_access/files/<machine>.pub
+git commit -m "add: cle publique <machine>"
 git push
-
-# Depuis une machine DEJA autorisee : appliquer
 ansible-playbook playbook.yml --ask-vault-pass
-
-# La nouvelle machine se connecte alors SANS le .pem :
-#   server1 ansible_host=<IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_ed25519
-
-
---------------------------------------------------------------------------------
- 6. VERIFICATIONS SUR LE SERVEUR
---------------------------------------------------------------------------------
-
-ssh -i ~/.ssh/cloud1-aws.pem ubuntu@<IP_PUBLIQUE>
-
-sudo docker ps                       # les 4 conteneurs doivent tourner
-sudo docker ps -a                    # y compris ceux arretes
-sudo docker compose -f /opt/wordpress/docker-compose.yml logs -f
-sudo docker logs <nom_conteneur>     # logs d'un seul conteneur
-sudo ufw status verbose              # seuls 22, 80, 443 ouverts
-ls -l /opt/wordpress                 # fichiers deployes
-sudo cat /opt/wordpress/.env         # secrets generes (root uniquement)
-docker exec -it <mysql_id> mysql -u root -p   # acces direct a la base
-
-
---------------------------------------------------------------------------------
- 7. AWS — COMMANDES / ACTIONS CONSOLE
---------------------------------------------------------------------------------
-
-# Console AWS (region eu-north-1 / Stockholm)
-#   EC2 > Paires de cles > Creer          -> cloud1-aws, ED25519, format .pem
-#   EC2 > Instances > Lancer une instance -> Ubuntu 22.04 LTS, t3.micro, 20 Gio gp3
-#        Parametres reseau : cocher "Autoriser HTTP" + "Autoriser HTTPS", SSH = Mon IP
-#   EC2 > Instances > cloud1              -> copier l'adresse IPv4 publique
-#   EC2 > Adresses IP Elastic > Allouer   -> Associer a cloud1 (IP fixe, optionnel)
-#   EC2 > Instance > "Se connecter"       -> EC2 Instance Connect (ssh navigateur, sans cle)
-
-# Economiser les credits
-#   EC2 > Instance > Etat de l'instance > Arreter   (le calcul n'est plus facture)
-#   Fin du projet : Terminer l'instance + liberer l'Elastic IP
-
-
---------------------------------------------------------------------------------
- 8. DEPANNAGE
---------------------------------------------------------------------------------
-
-# Permission denied (publickey)
-#   -> mauvais user : c'est "ubuntu", pas "root"
-#   -> chmod 400 ~/.ssh/cloud1-aws.pem oublie
-#   -> cle copiee dans /mnt/c (WSL) : la mettre dans ~/.ssh
-
-# Connexion SSH qui timeout
-#   -> port 22 absent du groupe de securite AWS, ou ton IP publique a change
-
-# Site injoignable mais SSH OK
-#   -> ports 80/443 absents du groupe de securite AWS (ufw seul ne suffit pas)
-
-# "couldn't resolve module/action community.general.ufw"
-ansible-galaxy collection install -r requirements.yml
-
-# Mot de passe vault oublie
-#   -> pas de recuperation : refaire group_vars/webservers.yml depuis l'exemple
-
-# Tout reprendre a zero
-ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
-ansible-playbook playbook.yml --ask-vault-pass
-
-
-# Nouvelle machine, aucune cle autorisee dessus (ex: portable, poste 42)
-#   -> passer par EC2 Instance Connect (terminal dans le navigateur, sans cle)
-
-# 1) Recuperer sa cle publique sur la nouvelle machine
-cat ~/.ssh/id_ed25519.pub
-
-# 2) Console AWS : EC2 > Groupes de securite > launch-wizard-1
-#    > Regles entrantes > Modifier > Ajouter une regle
-#    SSH / Personnalise / 13.48.4.200/30      (plage EC2 Instance Connect eu-north-1)
-#    SSH / Mon IP                             (l'IP de la nouvelle machine)
-#    NE JAMAIS supprimer les regles existantes des autres machines
-
-# 3) EC2 > Instances > cloud1 > Se connecter > onglet EC2 Instance Connect
-#    utilisateur : ubuntu
-
-# 4) Dans le terminal navigateur (DEUX chevrons >> sinon on ecrase tout)
-echo "ssh-ed25519 AAAA... commentaire" >> ~/.ssh/authorized_keys
-cat ~/.ssh/authorized_keys
-
-# 5) Tester depuis la nouvelle machine
-ssh ubuntu@<IP_PUBLIQUE>
-
-# 6) Rendre ca permanent : coller la meme cle publique dans
-#    roles/ssh_access/files/<machine>.pub, commit, push, puis relancer le playbook
-
-
-# Rappel IP publique / IP privee
-#   IP publique : visible dans la console EC2, change si l'instance est arretee
-#                 puis redemarree (sauf Elastic IP) -> c'est celle de inventory.ini
-#   IP privee   : 172.31.x.x, visible avec "ip a" sur le serveur, interne au VPC
-#                 -> ne sert jamais depuis l'exterieur
 
 ================================================================================
