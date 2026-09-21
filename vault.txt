@@ -1,20 +1,20 @@
-Oui : on ecrit d'abord les mots de passe EN CLAIR dans le .yml,
-puis on chiffre le fichier sur place.
+LES SECRETS
 
-  nano group_vars/webservers.yml          # valeurs en clair
-  ansible-vault encrypt group_vars/webservers.yml
-  head -1 group_vars/webservers.yml       # $ANSIBLE_VAULT;1.1;AES256
+  Fichier : group_vars/webservers.yml   (chiffre, hors git)
+  Contenu : 3 mots de passe MySQL + le mot de passe admin WordPress
 
-Le fichier est remplace par sa version chiffree : plus rien en clair sur le disque.
+  Chemin : group_vars (chiffre) --> env.j2 --> /opt/wordpress/.env (0600) --> conteneurs
+    {{ mysql_password }}  = Ansible, sur ma machine, au deploiement
+    ${MYSQL_PASSWORD}     = Docker, sur le serveur, au lancement
+  Aucun secret en clair dans le depot : les .j2 ne contiennent que des variables.
 
-Ce que fait le chiffrement :
-  mot de passe du vault -> PBKDF2-HMAC-SHA256 (+ sel aleatoire) -> cle
-  contenu -> AES-256-CTR + HMAC-SHA256 (integrite) -> ecrit en hexadecimal
-  Le mot de passe n'est stocke nulle part : perdu = irrecuperable.
+  On ecrit les valeurs en clair, puis on chiffre le fichier sur place :
+    ansible-vault encrypt group_vars/webservers.yml
+    head -1 group_vars/webservers.yml     -> $ANSIBLE_VAULT;1.1;AES256
 
-Au deploiement, --ask-vault-pass dechiffre en memoire vive.
-Le fichier sur le disque reste chiffre.
+  AES-256, cle derivee du mot de passe par PBKDF2. Mot de passe perdu = fichier perdu.
+  --ask-vault-pass dechiffre en memoire vive ; le fichier reste chiffre sur le disque.
 
-  ansible-vault view group_vars/webservers.yml    # lire
-  ansible-vault edit group_vars/webservers.yml    # modifier
-  ansible-vault rekey group_vars/webservers.yml   # changer le mot de passe
+    ansible-vault view group_vars/webservers.yml    # lire
+    ansible-vault edit group_vars/webservers.yml    # modifier
+    ansible-vault rekey group_vars/webservers.yml   # changer le mot de passe
