@@ -7,6 +7,11 @@ LANCER
   # https://13.60.218.238/             WordPress
   # https://13.60.218.238/phpmyadmin/  phpMyAdmin
 
+VERIFIER (depuis ma machine, sans se connecter au serveur)
+  ansible webservers -b -a "docker ps"        # 4 conteneurs UP
+  ansible webservers -b -a "ufw status"       # 22, 80, 443 seulement
+  curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
+
 SUPPRIMER
   ansible-playbook teardown.yml                    (stack + donnees)
   ansible-playbook teardown.yml -e full_wipe=true  (+ Docker et ufw : Ubuntu nu)
