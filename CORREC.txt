@@ -6,41 +6,69 @@
  0. UNE SEULE FOIS PAR MACHINE
 --------------------------------------------------------------------------------
 
-# Installer ansible
-sudo apt update && sudo apt install -y ansible
+# --- Installer ansible ---
+sudo apt update
+sudo apt install -y ansible
 
-# Cloner le projet (dans le home Linux, PAS dans /mnt/c sous WSL)
+# --- Cloner le projet (dans le home Linux, PAS dans /mnt/c sous WSL) ---
 cd ~
 git clone https://github.com/Thomasrbm/Cloud-1.git
 cd Cloud-1
 
-# Installer les collections ansible necessaires (ufw + authorized_key)
+# --- Installer les collections ansible (ufw + authorized_key) ---
 ansible-galaxy collection install -r requirements.yml
 
-# Cle SSH AWS (.pem telecharge depuis la console)
-#   sous WSL, le fichier est dans le Downloads WINDOWS :
+# --- Cle SSH : 2 cas ---
+
+# CAS 1 : tu utilises la cle .pem telechargee depuis AWS
+#   sous WSL le fichier est dans le Downloads WINDOWS, visible via /mnt/c
 ls /mnt/c/Users/*/Downloads/cloud1-aws.pem
 mkdir -p ~/.ssh
 cp /mnt/c/Users/User/Downloads/cloud1-aws.pem ~/.ssh/
 chmod 400 ~/.ssh/cloud1-aws.pem
+
+# CAS 2 : tu utilises ta propre cle SSH de la machine
+ls -l ~/.ssh/*.pub
+ssh-keygen -t ed25519 -C "nom-de-la-machine"     # seulement si tu n'en as pas
+cat ~/.ssh/id_ed25519.pub
+#   -> coller la ligne dans roles/ssh_access/files/<machine>.pub, commit, push
+#   -> puis relancer le playbook depuis une machine DEJA autorisee
 
 
 --------------------------------------------------------------------------------
  1. CONFIGURATION DU PROJET
 --------------------------------------------------------------------------------
 
-# Mettre l'IP publique de l'instance EC2 dans l'inventaire
-nano inventory.ini
-#   server1 ansible_host=<IP_PUBLIQUE> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/cloud1-aws.pem
+# --- Mettre l'IP PUBLIQUE de l'instance EC2 dans l'inventaire ---
+#   IP publique  = celle affichee dans la console EC2      -> a utiliser
+#   IP privee    = 172.31.x.x vue dans "ip a" sur le serveur -> JAMAIS
 
-# Creer les secrets (mots de passe MySQL) puis les chiffrer
+nano inventory.ini
+#   server1 ansible_host=<IP_PUBLIQUE> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/<ta_cle>
+
+# --- Ou en une commande (remplace la valeur par ton IP) ---
+sed -i 's|REMPLACE_PAR_IP_PUBLIQUE_EC2|13.60.218.238|' inventory.ini
+
+# --- Si tu utilises ta propre cle au lieu du .pem ---
+sed -i 's|~/.ssh/cloud1-aws.pem|~/.ssh/id_ed25519|' inventory.ini
+
+# --- Verifier le resultat ---
+cat inventory.ini
+
+# --- Creer les secrets (mots de passe MySQL) ---
 cp group_vars/webservers.yml.example group_vars/webservers.yml
 nano group_vars/webservers.yml
+
+# --- Chiffrer les secrets ---
 ansible-vault encrypt group_vars/webservers.yml
 
-# Voir / modifier les secrets plus tard
+# --- Voir / modifier les secrets plus tard ---
 ansible-vault view group_vars/webservers.yml
 ansible-vault edit group_vars/webservers.yml
+
+# ATTENTION : les 4 valeurs doivent etre IDENTIQUES sur toutes tes machines.
+# MySQL est initialise avec ces mots de passe au 1er deploiement ; redeployer
+# avec d'autres valeurs casse la connexion WordPress <-> base.
 
 
 --------------------------------------------------------------------------------
@@ -169,5 +197,38 @@ ansible-galaxy collection install -r requirements.yml
 # Tout reprendre a zero
 ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
 ansible-playbook playbook.yml --ask-vault-pass
+
+
+# Nouvelle machine, aucune cle autorisee dessus (ex: portable, poste 42)
+#   -> passer par EC2 Instance Connect (terminal dans le navigateur, sans cle)
+
+# 1) Recuperer sa cle publique sur la nouvelle machine
+cat ~/.ssh/id_ed25519.pub
+
+# 2) Console AWS : EC2 > Groupes de securite > launch-wizard-1
+#    > Regles entrantes > Modifier > Ajouter une regle
+#    SSH / Personnalise / 13.48.4.200/30      (plage EC2 Instance Connect eu-north-1)
+#    SSH / Mon IP                             (l'IP de la nouvelle machine)
+#    NE JAMAIS supprimer les regles existantes des autres machines
+
+# 3) EC2 > Instances > cloud1 > Se connecter > onglet EC2 Instance Connect
+#    utilisateur : ubuntu
+
+# 4) Dans le terminal navigateur (DEUX chevrons >> sinon on ecrase tout)
+echo "ssh-ed25519 AAAA... commentaire" >> ~/.ssh/authorized_keys
+cat ~/.ssh/authorized_keys
+
+# 5) Tester depuis la nouvelle machine
+ssh ubuntu@<IP_PUBLIQUE>
+
+# 6) Rendre ca permanent : coller la meme cle publique dans
+#    roles/ssh_access/files/<machine>.pub, commit, push, puis relancer le playbook
+
+
+# Rappel IP publique / IP privee
+#   IP publique : visible dans la console EC2, change si l'instance est arretee
+#                 puis redemarree (sauf Elastic IP) -> c'est celle de inventory.ini
+#   IP privee   : 172.31.x.x, visible avec "ip a" sur le serveur, interne au VPC
+#                 -> ne sert jamais depuis l'exterieur
 
 ================================================================================
