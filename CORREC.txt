@@ -12,10 +12,13 @@ DEPLOYER UNE PARTIE SEULEMENT (roles : stack, db, wordpress, phpmyadmin, proxy)
   ansible-playbook playbook.yml --tags proxy --ask-vault-pass
 
 VERIFIER (depuis ma machine, sans se connecter au serveur)
-  ansible webservers -b -a "docker ps"        # 4 conteneurs UP
-  ansible webservers -b -a "ufw status"       # 22, 80, 443 seulement
+  # --ask-vault-pass est obligatoire meme ici : cibler le groupe webservers
+  # fait charger group_vars/webservers.yml, qui est chiffre.
+  ansible webservers -m ping --ask-vault-pass                  # SUCCESS => pong
+  ansible webservers -b -a "docker ps" --ask-vault-pass        # 4 conteneurs UP
+  ansible webservers -b -a "ufw status" --ask-vault-pass       # 22, 80, 443 seulement
+  ansible webservers -b -a "docker volume ls" --ask-vault-pass # mysql_data, wp_data
   curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
-  ansible webservers -b -a "docker volume ls"  # wordpress_mysql_data, wordpress_wp_data
 
 SUPPRIMER
   ansible-playbook teardown.yml --ask-vault-pass                   (stack + donnees)
