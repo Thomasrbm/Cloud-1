@@ -137,6 +137,8 @@ Les crédits tiennent donc largement la durée du projet. Réflexes :
 | SSH qui timeout | port 22 non ouvert dans le groupe de sécurité, ou IP source changée |
 | Site injoignable mais SSH OK | 80/443 absents du groupe de sécurité (UFW seul ne suffit pas) |
 | `ansible-galaxy`/module `ufw` introuvable | `ansible-galaxy collection install -r requirements.yml` oublié |
+| Bloqué sur `Gathering Facts` alors que `ssh` manuel passe | socket SSH multiplexé figé : `rm -rf ~/.ansible/cp` |
+| Déploiement très lent, conteneurs tués au hasard | RAM saturée : vérifie `free -m` (le rôle `swap` couvre ce cas) |
 
 ---
 
