@@ -1,4 +1,7 @@
-group_vars/webservers.yml
+# group_vars/webservers.yml n'est PAS ici : il est chiffre par ansible-vault
+# (AES-256) et versionne volontairement, pour que `git clone` + le mot de passe
+# du vault suffisent a deployer. Ce qui ne doit JAMAIS etre commite, c'est le
+# mot de passe du vault lui-meme : les lignes ci-dessous s'en chargent.
 *.pem
 *.key
 secret.txt
