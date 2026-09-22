@@ -7,7 +7,7 @@
   become: true   # Requis pour installer des paquets et modifier le pare-feu
 
   # Ansible va chercher dans roles/<nom>/tasks/main.yml et l'execute.
-  # Les 3 premiers roles PREPARENT la machine, les 5 suivants sont un
+  # Les 4 premiers roles PREPARENT la machine, les 5 suivants sont un
   # composant chacun : chaque partie se deploie seule avec --tags.
   #   ansible-playbook playbook.yml --tags db --ask-vault-pass
   roles:
@@ -15,24 +15,27 @@
     # 0. Autorise les cles publiques des autres machines + l'acces root
     - { role: ssh_access, tags: ['ssh'] }
 
-    # 1. Installe le moteur Docker
+    # 1. Ajoute un fichier d'echange (1 Go de RAM, aucun swap sur AWS)
+    - { role: swap,       tags: ['swap', 'system'] }
+
+    # 2. Installe le moteur Docker
     - { role: docker,     tags: ['docker'] }
 
-    # 2. Ferme les ports inutiles (seuls ouverts : 22, 80, 443)
+    # 3. Ferme les ports inutiles (seuls ouverts : 22, 80, 443)
     - { role: ufw,        tags: ['ufw', 'security'] }
 
     # --- Un role = un composant de la stack ----------------------------------
-    # 3. Socle : dossier projet, .env (secrets), reseau et volumes nommes
+    # 4. Socle : dossier projet, .env (secrets), reseau et volumes nommes
     - { role: stack,      tags: ['stack'] }
 
-    # 4. Base de donnees MySQL (aucun port publie)
+    # 5. Base de donnees MySQL (aucun port publie)
     - { role: db,         tags: ['db'] }
 
-    # 5. Runtime PHP WordPress + installation du site par wp-cli
+    # 6. Runtime PHP WordPress + installation du site par wp-cli
     - { role: wordpress,  tags: ['wordpress', 'wp'] }
 
-    # 6. Interface d'administration de la base
+    # 7. Interface d'administration de la base
     - { role: phpmyadmin, tags: ['phpmyadmin', 'pma'] }
 
-    # 7. Reverse-proxy nginx + TLS : le seul composant expose sur Internet
+    # 8. Reverse-proxy nginx + TLS : le seul composant expose sur Internet
     - { role: proxy,      tags: ['proxy', 'nginx'] }

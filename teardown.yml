@@ -155,6 +155,31 @@
           apt:
             update_cache: true
 
+        - name: Disable the swap file
+          # Le role swap l'a cree : on remet la machine dans son etat AWS nu.
+          block:
+
+            - name: Turn the swap file off
+              command: "swapoff {{ swap_file }}"
+              failed_when: false
+
+            - name: Remove the swap file from /etc/fstab
+              # absent_from_fstab et non absent : le swap vient d'etre coupe
+              # par swapoff, inutile (et risque d'echec) de demonter en plus.
+              ansible.posix.mount:
+                path: none
+                src: "{{ swap_file }}"
+                fstype: swap
+                state: absent_from_fstab
+
+            - name: Delete the swap file and its sysctl tuning
+              file:
+                path: "{{ item }}"
+                state: absent
+              loop:
+                - "{{ swap_file }}"
+                - /etc/sysctl.d/99-cloud1-swap.conf
+
         - name: Reset firewall rules
           # Remet ufw à zéro : le rôle ufw les recréera au prochain déploiement.
           community.general.ufw:

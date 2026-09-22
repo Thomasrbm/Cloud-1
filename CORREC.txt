@@ -20,6 +20,10 @@ VERIFIER (depuis ma machine, sans se connecter au serveur)
   ansible webservers -b -a "docker volume ls" --ask-vault-pass # mysql_data, wp_data
   curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
 
+SI CA BLOQUE SUR "Gathering Facts"
+  rm -rf ~/.ansible/cp            # socket SSH multiplexe fige
+  ansible webservers -m ping --ask-vault-pass    # doit repondre pong
+
 SUPPRIMER
   ansible-playbook teardown.yml --ask-vault-pass                   (stack + donnees)
   ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true (+ Docker et ufw)
