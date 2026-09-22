@@ -23,16 +23,25 @@ A quoi ca ressemble
 LES 7 COMPTEURS DU PLAY RECAP
 
 
-ok        La tache s'est bien passee, et il n'y avait RIEN A FAIRE.
-          L'etat demande etait deja l'etat reel du serveur.
+ok        La tache s'est bien passee. ok signifie "conforme a ce qui
+          etait demande", pas "execute".
 
           Exemple : "Install ufw" -> ufw est deja installe, Ansible ne
           refait rien et compte ok.
 
-          Attention : ok ne veut pas dire "execute", il veut dire
-          "conforme". C'est le compteur qu'on veut voir gonfler au
-          deuxieme lancement : c'est la preuve de l'IDEMPOTENCE, le fait
-          qu'on puisse rejouer le playbook sans rien casser.
+          PIEGE : ok INCLUT les taches changed. Une tache qui modifie le
+          serveur incremente les deux compteurs. Les 7 chiffres du RECAP
+          ne s'additionnent donc pas pour donner le nombre de taches.
+
+          Verification sur notre propre run du role swap :
+            server1 : ok=7  changed=6  skipped=0
+          Il n'y a que 7 taches au total (Gathering Facts + les 6 du
+          role), pas 13 : les 6 changed sont deja comptees dans les 7 ok.
+
+          Pour lire l'idempotence, il faut donc regarder changed, pas ok :
+          un deuxieme run sur une machine inchangee doit donner
+          changed=0, c'est la preuve qu'on peut rejouer le playbook sans
+          rien casser.
 
           Note : "Gathering Facts" est toujours ok, c'est juste la
           collecte d'informations sur le serveur (OS, RAM, IP...).
@@ -148,9 +157,13 @@ CE QU'IL FAUT REGARDER, DANS L'ORDRE
 
   1. unreachable > 0   -> probleme de connexion, rien n'a ete tente
   2. failed > 0        -> lire le message "fatal:" juste au-dessus du RECAP
-  3. changed           -> au 1er run c'est normal, au 2e run ca doit tomber a 0
-  4. skipped           -> verifier que ce sont bien les taches attendues
-  5. ok                -> le gros du total sur une machine deja deployee
+  3. rescued / ignored -> de VRAIES erreurs, meme si failed=0. Un RECAP
+                          tout vert peut cacher des echecs rattrapes ou
+                          volontairement masques : toujours les verifier
+  4. changed           -> au 1er run c'est normal, au 2e run ca doit tomber a 0
+  5. skipped           -> verifier que ce sont bien les taches attendues
+  6. ok                -> le gros du total sur une machine deja deployee,
+                          en gardant en tete qu'il contient les changed
 
 
 POUR VOIR PLUS DE DETAIL
