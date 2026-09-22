@@ -16,6 +16,15 @@ https_port: 443
 # ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
 allow_root_ssh: true
 
+# --- Memoire (role swap) -----------------------------------------------------
+# Le t3.micro n'a que 1 Go de RAM et aucun swap : un `apt install` lance a cote
+# de MySQL suffit a saturer la machine. Ce fichier d'echange sert de filet.
+# Mets swap_enabled a false sur un serveur qui a deja assez de RAM.
+swap_enabled: true
+swap_file: /swapfile
+swap_size_mb: 2048
+swap_swappiness: 10
+
 # --- Composition de la stack -------------------------------------------------
 # Chaque composant apporte son propre fichier compose ; Docker les fusionne
 # dans cet ordre. La liste est ecrite dans le .env (variable COMPOSE_FILE), ce

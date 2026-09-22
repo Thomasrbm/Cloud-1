@@ -1,0 +1,70 @@
+---
+# ==============================================================================
+# ROLE SWAP
+#
+# Le t3.micro n'a que 1 Go de RAM et AWS ne fournit aucun swap. Avec MySQL,
+# php-fpm, phpMyAdmin et nginx qui tournent en meme temps, un simple
+# `apt install` suffit a saturer la memoire : le serveur rame, et dans le pire
+# des cas l'OOM killer tue un conteneur au hasard.
+#
+# Ce role ajoute un fichier d'echange qui sert de filet de securite. Il ne
+# remplace pas de la vraie RAM (le disque est ~100x plus lent), il evite juste
+# que la machine s'effondre lors des pics.
+#
+# Desactivable : swap_enabled: false dans group_vars/all.yml.
+# ==============================================================================
+
+- name: Configure a swap file
+  when:
+    - swap_enabled | bool
+    # Une machine qui a deja du swap (VPS classique) n'a rien a faire ici.
+    - ansible_swaptotal_mb | int == 0
+  block:
+
+    # fallocate reserve la place d'un coup, sans ecrire les octets un par un
+    # (contrairement a dd). `creates:` rend la tache idempotente : si le
+    # fichier existe deja, Ansible la saute.
+    - name: Allocate the swap file
+      command: "fallocate -l {{ swap_size_mb }}M {{ swap_file }}"
+      args:
+        creates: "{{ swap_file }}"
+      register: swap_allocated
+
+    # Obligatoire : swapon refuse un fichier lisible par d'autres utilisateurs
+    # (la memoire d'un process pourrait y etre lue en clair).
+    - name: Restrict the swap file to root
+      file:
+        path: "{{ swap_file }}"
+        owner: root
+        group: root
+        mode: "0600"
+
+    # Uniquement si on vient de le creer : re-formater un swap deja monte
+    # corromprait les pages en cours d'utilisation.
+    - name: Format the swap file
+      command: "mkswap {{ swap_file }}"
+      when: swap_allocated.changed
+
+    # Survit au reboot.
+    - name: Persist the swap file in /etc/fstab
+      ansible.posix.mount:
+        path: none
+        src: "{{ swap_file }}"
+        fstype: swap
+        opts: sw
+        state: present
+
+    # Activation immediate, sans attendre un redemarrage.
+    - name: Enable the swap file now
+      command: "swapon {{ swap_file }}"
+      when: swap_allocated.changed
+
+    # 10 = le noyau n'utilise le swap qu'en dernier recours. La valeur par
+    # defaut (60) ferait swapper MySQL alors qu'il reste de la RAM libre.
+    - name: Lower swappiness
+      ansible.posix.sysctl:
+        name: vm.swappiness
+        value: "{{ swap_swappiness }}"
+        state: present
+        sysctl_file: /etc/sysctl.d/99-cloud1-swap.conf
+        reload: true

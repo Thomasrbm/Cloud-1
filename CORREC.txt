@@ -20,6 +20,10 @@ VERIFIER (depuis ma machine, sans se connecter au serveur)
   ansible webservers -b -a "docker volume ls" --ask-vault-pass # mysql_data, wp_data
   curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
 
+SI CA BLOQUE SUR "Gathering Facts"
+  rm -rf ~/.ansible/cp            # socket SSH multiplexe fige
+  ansible webservers -m ping --ask-vault-pass    # doit repondre pong
+
 SUPPRIMER
   ansible-playbook teardown.yml --ask-vault-pass                   (stack + donnees)
   ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true (+ Docker et ufw)
@@ -31,8 +35,8 @@ MACHINE NEUVE (sinon rien a faire)
   cd Cloud-1
   sudo apt install -y ansible
   ansible-galaxy collection install -r requirements.yml
-  # group_vars/webservers.yml n'est PAS dans git (secrets) : le recopier
-  # depuis ma sauvegarde, ou le recreer -> voir SECRETS.txt
+  # group_vars/webservers.yml EST dans git (chiffre par ansible-vault) :
+  # rien a recopier, seul le mot de passe du vault est a connaitre.
 
 SI L'IP A CHANGE
   sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini
