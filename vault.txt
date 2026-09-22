@@ -1,6 +1,12 @@
 LES SECRETS
 
-  Fichier : group_vars/webservers.yml   (chiffre, hors git)
+  Fichier : group_vars/webservers.yml   (chiffre par ansible-vault, dans git)
+
+  Pourquoi dans git : c'est tout l'interet du vault. Le depot est autonome,
+  `git clone` + le mot de passe du vault suffisent a deployer depuis n'importe
+  quelle machine. Le sujet interdit les identifiants EN CLAIR dans le depot :
+  un blob AES-256 n'est pas en clair. Ce qui reste hors git : le mot de passe
+  du vault, jamais ecrit nulle part dans le projet.
   Contenu : 3 mots de passe MySQL + le mot de passe admin WordPress
 
   Chemin : group_vars (chiffre) --> env.j2 --> /opt/wordpress/.env (0600) --> conteneurs
