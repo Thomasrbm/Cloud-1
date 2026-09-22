@@ -81,12 +81,14 @@ déjà configuré sur l'AMI).
 server1 ansible_host=<IP_PUBLIQUE> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/cloud1-aws.pem
 ```
 
-Secrets (une seule fois) :
+Secrets : rien a faire. `group_vars/webservers.yml` est deja dans le depot,
+chiffre par ansible-vault ; `--ask-vault-pass` le dechiffre en memoire au
+deploiement. Uniquement pour repartir de zero avec de nouveaux mots de passe :
 
 ```sh
 cp group_vars/webservers.yml.example group_vars/webservers.yml
 $EDITOR group_vars/webservers.yml          # mets tes vrais mots de passe
-ansible-vault encrypt group_vars/webservers.yml
+ansible-vault encrypt group_vars/webservers.yml   # obligatoire avant de committer
 ```
 
 Dépendances Ansible :

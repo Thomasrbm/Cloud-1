@@ -6,7 +6,10 @@ LANCER
 
   Ansible lit playbook.yml, s'arrete pour demander le mot de passe du vault,
   puis charge automatiquement group_vars/ (all.yml en clair, webservers.yml
-  chiffre) et execute les roles dans l'ordre.
+  chiffre par ansible-vault) et execute les roles dans l'ordre.
+
+  Les deux fichiers sont dans le depot : un `git clone` suffit, il n'y a rien
+  a recopier a la main. Seul le mot de passe du vault est a connaitre.
 
 
 LES ROLES
