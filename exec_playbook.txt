@@ -1,0 +1,184 @@
+LE PLAY RECAP : ce que comptent les sept compteurs, et ce qu'ils cachent.
+
+
+A la fin de chaque execution, Ansible resume le travail fait sur CHAQUE hote.
+Une ligne par hote. Celle de notre stack :
+
+  server1 : ok=38  changed=2  unreachable=0  failed=0  skipped=9  rescued=0  ignored=0
+
+Ces chiffres ne s'additionnent pas pour donner le nombre de taches : certains
+compteurs se recouvrent. C'est le premier piege, explique en section 8.
+
+Rejouer le playbook
+=> ansible-playbook playbook.yml --ask-vault-pass
+
+Voir la liste des taches sans rien executer
+=> ansible-playbook playbook.yml --list-tasks --ask-vault-pass
+
+
+--- 1. OK : la tache s'est executee sans erreur ------------------------------
+
+Le total des taches qui ont abouti. Peu importe qu'elles aient modifie quelque
+chose ou constate que tout etait deja en place : les deux comptent ici.
+
+Exemple de notre run :
+
+  TASK [wordpress : Check whether WordPress is already installed]
+  ok: [server1]
+
+La tache a bien tourne, elle a juste trouve que l'installation existait deja.
+
+
+--- 2. CHANGED : la tache a MODIFIE l'etat du serveur ------------------------
+
+Le module a trouve un ecart entre l'etat demande et l'etat reel, et l'a
+corrige : un fichier ecrit, un paquet installe, un conteneur recree.
+
+  RUNNING HANDLER [stack : Recreate stack]
+  changed: [server1]
+
+ATTENTION : changed est une PARTIE de ok, pas une categorie separee. Une tache
+qui change quelque chose incremente les DEUX compteurs. Nos 38 ok contiennent
+donc deja les 2 changed ; il n'y a pas 40 taches reussies.
+
+C'est ce compteur qui mesure l'idempotence (section 9).
+
+
+--- 3. UNREACHABLE : l'hote n'a pas repondu ----------------------------------
+
+Ansible n'a pas pu OUVRIR la connexion : SSH refuse, cle non acceptee, machine
+eteinte, mauvaise IP dans l'inventaire. Rien n'a ete tente sur le serveur.
+
+A ne pas confondre avec failed : ici le probleme est AVANT la tache, on n'a
+jamais parle a la machine. Un hote injoignable sort du play, ses taches
+suivantes ne sont meme pas essayees.
+
+Verifier la connexion seule
+=> ansible webservers -m ping --ask-vault-pass        # SUCCESS => pong
+
+
+--- 4. FAILED : la tache a tourne et a echoue --------------------------------
+
+La connexion a marche, le module s'est execute, et il a renvoye une erreur :
+paquet introuvable, commande en code de retour non nul, fichier absent.
+
+Par defaut, un failed ARRETE le play pour cet hote : les taches d'apres ne
+sont pas jouees. C'est voulu : continuer a deployer sur une base cassee ferait
+plus de degats que s'arreter.
+
+Ne comptent ici que les echecs NON rattrapes : ceux couverts par un rescue ou
+par ignore_errors partent dans leurs propres compteurs (sections 6 et 7).
+
+
+--- 5. SKIPPED : la tache n'avait pas lieu d'etre ----------------------------
+
+La condition du when: est fausse, ou les tags demandes ne la selectionnent pas.
+La tache n'est pas jouee du tout.
+
+  TASK [wordpress : Install WordPress]
+  skipping: [server1]
+
+Ce n'est PAS un probleme : c'est le mecanisme normal qui evite de reinstaller
+WordPress a chaque passage. Nos 9 skipped sont attendus.
+
+Un skipped inattendu se debogue en regardant la variable du when:
+=> ansible-playbook playbook.yml --check --diff --ask-vault-pass
+
+
+--- 6. RESCUED : la tache a echoue, et un rescue l'a rattrapee ---------------
+
+Dans un block/rescue/always, une tache du block echoue et le bloc rescue prend
+le relais. Ansible compte l'echec ici, PAS dans failed, et le play continue.
+
+  - block:
+      - name: tenter le montage rapide
+        ...
+    rescue:
+      - name: repli sur la methode lente
+        ...
+
+A LIRE COMME UN AVERTISSEMENT : rescued > 0 signifie qu'il y a bel et bien eu
+une erreur. Elle a ete geree, pas evitee. Avec failed=0 et rescued=3, le
+playbook est "vert" alors que trois choses se sont mal passees.
+
+
+--- 7. IGNORED : la tache a echoue, et on avait dit de passer outre ----------
+
+La tache porte ignore_errors: true. Ansible affiche l'echec, ecrit "...ignoring"
+et continue comme si de rien n'etait.
+
+  - name: arreter l'ancien conteneur s'il existe
+    ansible.builtin.command: docker stop vieux
+    ignore_errors: true
+
+Meme lecture que rescued : ignored > 0 veut dire qu'une tache a rate. Sauf
+qu'ici, contrairement au rescue, RIEN n'a ete fait pour y remedier.
+
+Piege verifie : une tache ignoree compte AUSSI dans ok. Et le module command
+signale "changed": true meme quand la commande renvoie un code non nul, donc
+un echec ignore peut gonfler changed sans avoir rien accompli.
+
+
+--- 8. LE PIEGE : ces compteurs se recouvrent --------------------------------
+
+Mesure faite sur un playbook temoin de 5 taches (une ok, une changed, une
+skipped, une ignoree, une rescapee) :
+
+  ok=4  changed=2  unreachable=0  failed=0  skipped=1  rescued=1  ignored=1
+
+Ce qu'on en deduit :
+
+  changed est INCLUS dans ok      une tache qui change compte deux fois
+  ignored est INCLUS dans ok      d'ou ok=4 pour seulement 3 taches saines
+  rescued est HORS de ok          l'echec rattrape ne compte pas comme reussi
+  skipped est a part              la tache n'a pas ete jouee
+
+Le nombre de taches REELLEMENT tentees vaut donc, en gros :
+  ok + skipped + failed + rescued      (changed et ignored etant deja dans ok)
+
+Pour notre run : 38 + 9 + 0 + 0 = 47 taches.
+
+
+--- 9. LIRE UN RECAP : SAIN OU PAS ? -----------------------------------------
+
+Un deploiement propre :
+
+  unreachable=0  failed=0  rescued=0  ignored=0
+
+Les quatre a zero. Si l'un des quatre est non nul, quelque chose s'est mal
+passe, meme quand le playbook se termine sans erreur apparente.
+
+Pour changed, tout depend du passage :
+
+  PREMIER run    changed eleve   normal, on construit tout
+  SECOND run     changed=0       le playbook est IDEMPOTENT
+  SECOND run     changed>0       une tache retravaille inutilement
+
+L'idempotence est l'objectif : relancer le playbook sur un serveur deja
+deploye ne doit RIEN changer. C'est ce qui rend sur de le rejouer.
+
+Tester l'idempotence : lancer deux fois de suite et comparer
+=> ansible-playbook playbook.yml --ask-vault-pass
+=> ansible-playbook playbook.yml --ask-vault-pass    # attendu : changed=0
+
+Voir ce qui changerait, sans rien toucher
+=> ansible-playbook playbook.yml --check --diff --ask-vault-pass
+
+Note sur notre stack : le handler "Recreate stack" n'est notifie que par deux
+taches du role stack, celle qui pose le .env et celle qui pose le compose de
+base. Il ne part donc que si l'un de ces deux fichiers a change.
+
+Dans le recap du haut, changed=2 ET le handler a tourne : un de ces deux
+fichiers avait bouge. Sur un serveur deja a jour, on attend changed=0 et pas
+de RUNNING HANDLER du tout.
+
+
+--- 10. RESUME EN UNE LIGNE CHACUN -------------------------------------------
+
+  ok           la tache a abouti (contient changed et ignored)
+  changed      elle a modifie le serveur
+  unreachable  la machine n'a pas repondu, rien n'a ete tente
+  failed       la tache a tourne et a echoue, le play s'arrete
+  skipped      un when: ou un tag l'a ecartee, elle n'a pas ete jouee
+  rescued      elle a echoue, un bloc rescue a pris le relais
+  ignored      elle a echoue, ignore_errors a dit de continuer
