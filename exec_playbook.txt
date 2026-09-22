@@ -1,0 +1,165 @@
+LIRE LA SORTIE D'UN PLAYBOOK ANSIBLE
+
+
+A quoi ca ressemble
+
+  ansible-playbook playbook.yml --ask-vault-pass
+
+  PLAY [Deploy WordPress stack] ********************************************
+
+  TASK [Gathering Facts] ***************************************************
+  ok: [server1]
+
+  TASK [swap : Allocate the swap file] *************************************
+  changed: [server1]
+
+  PLAY RECAP ***************************************************************
+  server1 : ok=20  changed=6  unreachable=0  failed=0  skipped=6  rescued=0  ignored=0
+
+  Chaque TASK affiche son resultat pour chaque serveur, et le PLAY RECAP
+  totalise tout a la fin, machine par machine.
+
+
+LES 7 COMPTEURS DU PLAY RECAP
+
+
+ok        La tache s'est bien passee, et il n'y avait RIEN A FAIRE.
+          L'etat demande etait deja l'etat reel du serveur.
+
+          Exemple : "Install ufw" -> ufw est deja installe, Ansible ne
+          refait rien et compte ok.
+
+          Attention : ok ne veut pas dire "execute", il veut dire
+          "conforme". C'est le compteur qu'on veut voir gonfler au
+          deuxieme lancement : c'est la preuve de l'IDEMPOTENCE, le fait
+          qu'on puisse rejouer le playbook sans rien casser.
+
+          Note : "Gathering Facts" est toujours ok, c'est juste la
+          collecte d'informations sur le serveur (OS, RAM, IP...).
+
+
+changed   La tache a bien passe, et elle A MODIFIE le serveur.
+          L'etat reel ne correspondait pas a l'etat demande, Ansible a
+          agi pour le corriger.
+
+          Exemple : "Allocate the swap file" au premier passage -> le
+          fichier n'existait pas, Ansible l'a cree : changed.
+          Au passage suivant il existe deja : ok.
+
+          Un premier deploiement est plein de changed. Un deuxieme
+          deploiement sur une machine inchangee ne devrait en avoir
+          aucun (ou seulement ceux des taches non idempotentes, typiquement
+          un `command:` sans `creates:`).
+
+          En soutenance : lancer le playbook deux fois de suite et montrer
+          que le second run est presque tout en ok, c'est la demonstration
+          que le deploiement est reproductible.
+
+
+unreachable
+          Ansible N'A PAS PU JOINDRE la machine. Ce n'est pas une erreur
+          de la tache : c'est une erreur de transport SSH, avant meme que
+          la tache commence.
+
+          Causes classiques :
+            - mauvaise IP dans inventory.ini (l'instance a redemarre)
+            - port 22 ferme dans le groupe de securite AWS
+            - clef privee absente ou mauvais chmod
+            - serveur sature : sshd ne repond plus
+
+          Des qu'un hote est unreachable, Ansible l'ecarte du play : les
+          taches suivantes ne sont meme pas tentees sur lui.
+
+
+failed    La tache A ETE EXECUTEE et elle A ECHOUE. Le serveur repondait,
+          mais l'operation n'a pas abouti.
+
+          Exemple reel :
+            TASK [stack : Deploy .env file (secrets)]
+            fatal: [server1]: FAILED! => "AnsibleUndefinedVariable:
+            'mysql_root_password' is undefined"
+          -> group_vars/webservers.yml manquait sur la machine.
+
+          Par defaut, un failed arrete le play POUR CET HOTE : les roles
+          suivants ne sont pas joues. Les autres serveurs du groupe, eux,
+          continuent.
+
+          C'est le seul compteur qui fait sortir ansible-playbook avec un
+          code de retour non nul (utile en CI).
+
+
+skipped   La tache A ETE VOLONTAIREMENT SAUTEE, parce que sa condition
+          `when:` etait fausse. Ce n'est ni une erreur ni un probleme.
+
+          Exemple : le role swap est entierement conditionne par
+            when:
+              - swap_enabled | bool
+              - ansible_swaptotal_mb | int == 0
+          Une fois le swap en place, ansible_swaptotal_mb vaut 2047, la
+          condition est fausse, et les 6 taches du role passent en
+          skipping. C'est exactement le comportement voulu.
+
+          Skipped apparait aussi quand on filtre avec --tags : les taches
+          hors tags ne sont pas comptees, elles ne sont simplement pas
+          chargees.
+
+
+rescued   La tache a echoue A L'INTERIEUR d'un `block:`, et le `rescue:`
+          associe a pris le relais pour rattraper le coup.
+          C'est le try/catch d'Ansible.
+
+              - block:
+                  - name: Tentative
+                    command: /bin/faux
+                rescue:
+                  - name: Plan B
+                    debug: msg="on rattrape"
+
+          Le play continue normalement. rescued=1 signale qu'un incident
+          a eu lieu mais qu'il a ete gere.
+
+          Dans ce projet il n'y a aucun rescue : ce compteur reste a 0.
+
+
+ignored   La tache a echoue, mais on avait demande a Ansible de ne pas en
+          tenir compte, avec `ignore_errors: true`.
+
+          Le play continue, et le code de retour final reste 0. A utiliser
+          avec parcimonie : on masque une vraie erreur.
+
+          Alternative plus propre et utilisee dans ce projet :
+            failed_when: false   -> la tache n'est jamais consideree en
+                                    echec (ex : swapoff dans teardown.yml)
+            changed_when: false  -> la tache ne compte jamais comme changed
+                                    (ex : une simple lecture)
+
+
+LE CODE DE RETOUR
+
+  echo $?   juste apres le playbook
+
+    0   tout s'est bien passe (les ok, changed, skipped, rescued et
+        ignored n'empechent rien)
+    2   au moins une tache en failed
+    4   au moins un hote unreachable
+
+
+CE QU'IL FAUT REGARDER, DANS L'ORDRE
+
+  1. unreachable > 0   -> probleme de connexion, rien n'a ete tente
+  2. failed > 0        -> lire le message "fatal:" juste au-dessus du RECAP
+  3. changed           -> au 1er run c'est normal, au 2e run ca doit tomber a 0
+  4. skipped           -> verifier que ce sont bien les taches attendues
+  5. ok                -> le gros du total sur une machine deja deployee
+
+
+POUR VOIR PLUS DE DETAIL
+
+  ansible-playbook playbook.yml --ask-vault-pass -v      # resultat des modules
+  ansible-playbook playbook.yml --ask-vault-pass -vvv    # + commandes SSH
+  ansible-playbook playbook.yml --ask-vault-pass -vvvv   # + connexion detaillee
+
+  ansible-playbook playbook.yml --ask-vault-pass --check  # simulation, aucune
+                                                          # modification reelle
+  ansible-playbook playbook.yml --ask-vault-pass --diff   # montre ce qui change
+                                                          # dans les fichiers
