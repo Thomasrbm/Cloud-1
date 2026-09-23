@@ -13,10 +13,10 @@ Administration WordPress
 phpMyAdmin
 => https://13.60.218.238/phpmyadmin/
    user : wp_user
-   mdp  : METS_LE_MYSQL_PASSWORD
+   mdp  : b5B2g5OSnzWg9V7QBWnyDiZH
    ---
    user : root
-   mdp  : METS_LE_MYSQL_ROOT_PASSWORD
+   mdp  : 2t4CesixwPXrnRJAOWz4SMiz
 
 
 Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
