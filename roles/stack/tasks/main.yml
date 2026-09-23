@@ -1,30 +1,36 @@
 ---
+
 # ==============================================================================
-# ROLE STACK : le socle commun, rien d'applicatif.
-#   - le dossier projet
-#   - le .env (secrets + liste des fichiers compose)
-#   - le fichier compose de base (reseau + volumes nommes)
-# Les roles db / wordpress / phpmyadmin / proxy viennent ensuite s'y brancher.
+# RÔLE SOCLE (STACK)
+
+# Le dossier du projet, les secrets et le réseau. Aucun conteneur applicatif ici :
+# db, wordpress, phpmyadmin et proxy viennent se brancher dessus juste après.
 # ==============================================================================
 
+
+# Bloc 1 : arborescence
 - name: Create project directory
-  file:
-    path: "{{ project_dir }}"
-    state: directory
-    mode: '0755'
+  file: # Module 'file' pour créer des structures de dossiers
+    path: "{{ project_dir }}"   # project_dir defini dans groups_var, all.yaml
+    state: directory            # On demande la création d'un dossier
+    mode: '0755'                # Permissions standard (root modifie, les autres lisent et entrent)
 
-# Le .env doit exister AVANT le premier `docker compose` : c'est lui qui fournit
-# les mots de passe et la liste COMPOSE_FILE.
+
+# Bloc 2 : le .env
+# Il doit exister AVANT le premier docker compose : c'est lui qui donne les mots
+# de passe et la liste des fichiers compose à fusionner.
 - name: Deploy .env file (secrets)
   template:
     src: env.j2
     dest: "{{ project_dir }}/.env"
-    mode: '0600'   # lisible par root uniquement
+    mode: '0600' # perm admin only
   notify: Recreate stack
 
+
+# Bloc 3 : copie le compose de base
 - name: Deploy base compose file (network and named volumes)
-  template:
-    src: docker-compose.yml.j2
-    dest: "{{ project_dir }}/docker-compose.yml"
+  template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
+    src: docker-compose.yml.j2                 # Le fichier modèle sur ton ordinateur personnel
+    dest: "{{ project_dir }}/docker-compose.yml" # La destination sur le serveur distant
     mode: '0644'
-  notify: Recreate stack
+  notify: Recreate stack # Si la config change, Ansible appellera un "handler" pour redémarrer l'app

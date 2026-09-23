@@ -1,4 +1,5 @@
-# Composant BASE DE DONNEES. Depose par le role Ansible `db`.
+# La base de données. Déposé par le rôle db.
+# 1 process = 1 container. Secrets injectés via .env (jamais en dur).
 services:
   mysql:
     image: mysql:8.0
@@ -9,8 +10,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql   # volume nommé : survit au reboot
     networks:
       - wp_network
-    # Aucune section `ports:` : MySQL n'ecoute que sur le reseau interne
-    # wp_network, sur 3306. Injoignable depuis Internet, meme si ufw tombait.
+    # Pas de ports exposés : la base n'est jamais joignable depuis Internet,
+    # seulement sur wp_network, en 3306.

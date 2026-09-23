@@ -1,30 +1,45 @@
 ---
+
 # ==============================================================================
-# ROLE DB : MySQL, et rien d'autre.
-# Deployable seul :  ansible-playbook playbook.yml --tags db --ask-vault-pass
+# RÔLE BASE DE DONNÉES (DB)
+
+# MySQL, et rien d'autre. Déployable seul :
+#   ansible-playbook playbook.yml --tags db --ask-vault-pass
 # ==============================================================================
 
+
+# Bloc 1 : copie le compose de la base
 - name: Deploy the database compose file
   template:
     src: compose.db.yml.j2
     dest: "{{ project_dir }}/compose.db.yml"
     mode: '0644'
 
-# -f explicite : ce role ne manipule que le socle + son propre composant.
+
+# Bloc 2 : lance ou maj le docker mysql
+# Les -f sont explicites : ce rôle ne touche qu'au socle et à son composant.
 - name: Start the database
   command: docker compose -f docker-compose.yml -f compose.db.yml up -d mysql
   args:
     chdir: "{{ project_dir }}"
-  register: db_up
-  # IDEMPOTENCE : "changed" seulement si Docker a reellement cree ou redemarre
-  # le conteneur. Une stack deja en place affiche "Running" -> ok, pas changed.
+  register: db_up # Enregistre le texte de réponse du terminal dans une variable nommée 'db_up'
+
+    # IDEMPOTENCE : Ansible considère par défaut qu'une tâche 'command' modifie TOUJOURS le serveur.
+
+    # Grâce à cette condition, Ansible dira "changed" (modifié) uniquement si Docker a réellement créé,
+    # démarré ou recréé le conteneur.
+
+    #Si tout tourne déjà parfaitement, il affichera juste "ok" (aucun changement).
   changed_when: >
     ('Started' in db_up.stderr) or ('Created' in db_up.stderr)
     or ('Recreated' in db_up.stderr)
 
-# MySQL met 10 a 30 s a s'initialiser au premier demarrage (creation de la base
-# et des comptes). mysqladmin est fourni par l'image elle-meme ; le mot de passe
-# est lu DANS le conteneur, il n'apparait jamais dans la ligne de commande.
+
+# Bloc 3 : attendre que MySQL accepte les connexions
+# MySQL met 10 a 30 s a s'initialiser au tout premier demarrage (creation de la
+# base et des comptes). On interroge le serveur avec mysqladmin, fourni par
+# l'image mysql elle-meme. Le mot de passe est lu DANS le conteneur depuis sa
+# variable d'environnement : il n'apparait jamais dans la ligne de commande.
 - name: Wait for MySQL to accept connections
   shell: >-
     docker compose -f docker-compose.yml -f compose.db.yml exec -T mysql
@@ -32,11 +47,12 @@
   args:
     chdir: "{{ project_dir }}"
   register: mysql_ping
-  until: mysql_ping.rc == 0
+  until: mysql_ping.rc == 0   # on retente tant que ça ne répond pas
   retries: 30
   delay: 5
   changed_when: false
   failed_when: false
+
 
 - name: Fail with a clear message if MySQL never came up
   fail:

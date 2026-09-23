@@ -87,11 +87,10 @@
       changed_when: true
 
     # --------------------------------------------------------------------
-    # Bloc 2 : suppression des données
-    #   - les volumes NOMMES (mysql_data, wp_data) sont supprimés par le -v
-    #     du `docker compose down` ci-dessus ;
-    #   - ce filet de sécurité les enlève même si le .env a disparu et que
-    #     la commande précédente n'a pas pu s'exécuter.
+    # Bloc 2 : suppression des données (volumes nommés + dossier du projet)
+    # Le -v du docker compose down juste au-dessus supprime déjà mysql_data et
+    # wp_data. On les redemande ici au cas où le .env aurait disparu : sans
+    # lui la commande précédente n'a rien pu faire.
     # --------------------------------------------------------------------
     - name: Remove the named volumes explicitly
       command: "docker volume rm {{ item }}"

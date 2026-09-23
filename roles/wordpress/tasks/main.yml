@@ -1,19 +1,23 @@
 ---
+
 # ==============================================================================
-# ROLE WORDPRESS : le runtime PHP + l'installation du site par wp-cli.
-# Le sujet exige un site fonctionnel obtenu UNIQUEMENT par le script : sans les
-# blocs wp-cli, chaque deploiement s'arreterait sur le formulaire "Welcome".
-#
-# -f inclut compose.db.yml car le service wordpress declare `depends_on: mysql`
-# et Compose refuse de demarrer si le service cible est absent du jeu de fichiers.
+# RÔLE WORDPRESS
+
+# Le runtime PHP (php-fpm) et l'installation du site par wp-cli.
+# Les -f incluent compose.db.yml : le service wordpress declare depends_on mysql,
+# et Compose refuse de demarrer si ce service manque dans le jeu de fichiers.
 # ==============================================================================
 
+
+# Bloc 1 : copie le compose de WordPress
 - name: Deploy the WordPress compose file
   template:
     src: compose.wordpress.yml.j2
     dest: "{{ project_dir }}/compose.wordpress.yml"
     mode: '0644'
 
+
+# Bloc 2 : lance ou maj le docker wordpress
 - name: Start WordPress (php-fpm)
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
@@ -21,13 +25,15 @@
   args:
     chdir: "{{ project_dir }}"
   register: wp_up
+  # Idem que pour la base : "changed" seulement si Docker a vraiment bougé.
   changed_when: >
     ('Started' in wp_up.stderr) or ('Created' in wp_up.stderr)
     or ('Recreated' in wp_up.stderr)
 
-# Au tout premier lancement, l'image recopie WordPress dans le volume wp_data.
-# On attend la fin de la copie ; le volume etant nomme, on teste DEPUIS le
-# conteneur et non par un chemin sur l'hote.
+
+# Bloc 3 : attendre que l'image WordPress ait fini de copier ses fichiers
+# Le volume étant nommé, on ne peut plus tester un chemin sur l'hôte : on
+# regarde DEPUIS le conteneur.
 - name: Wait for WordPress files to be extracted
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
@@ -42,17 +48,29 @@
   changed_when: false
   failed_when: false
 
+
 - name: Fail with a clear message if WordPress files never appeared
   fail:
     msg: "WordPress n'a pas fini de s'extraire. Verifier : docker compose logs wordpress"
   when: wp_files.rc != 0
 
-# On appelle explicitement `wp` : l'entrypoint de l'image wordpress:cli ne
-# prefixe la commande par `wp` que si le premier argument commence par un
-# tiret. Sans lui, il tente d'executer le binaire `core`, qui n'existe pas.
+
+# ==============================================================================
+# INSTALLATION AUTOMATIQUE DE WORDPRESS (wp-cli)
+# Le sujet exige un site fonctionnel obtenu UNIQUEMENT par le script : sans ces
+# taches, chaque deploiement s'arrete sur le formulaire "Welcome" de WordPress,
+# qu'il faudrait remplir a la main.
 #
-# 'core is-installed' renvoie 0 si oui, 1 sinon : c'est ce test qui rend
-# l'installation idempotente. Relancer le playbook ne reinstalle rien.
+# On ecrit `wpcli wp core ...` et pas `wpcli core ...` : l'entrypoint de l'image
+# ne rajoute `wp` que si le premier argument commence par un tiret, sinon il
+# cherche un binaire nomme `core`, qui n'existe pas.
+# ==============================================================================
+
+
+# Bloc 4 : WordPress est-il deja installe ?
+# 'core is-installed' renvoie 0 si oui, 1 sinon. C'est ce test qui rend la
+# tache suivante idempotente : relancer le playbook ne reinstalle rien.
+# wp-cli parle a MySQL via PHP, il n'a besoin d'aucun binaire client.
 - name: Check whether WordPress is already installed
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
@@ -63,6 +81,8 @@
   changed_when: false
   failed_when: false
 
+
+# Bloc 5 : installation (titre, compte admin) - seulement si necessaire
 - name: Install WordPress
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
@@ -78,3 +98,6 @@
   when: wp_is_installed.rc != 0
   register: wp_install
   changed_when: wp_install.rc == 0
+  # Rien n'est affiche quand la tache reussit ; en cas d'echec Ansible montre
+  # la commande, mot de passe compris, ce qui est voulu ici pour pouvoir
+  # diagnostiquer. Le mot de passe reste par ailleurs dans le vault.

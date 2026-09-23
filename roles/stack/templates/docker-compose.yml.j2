@@ -1,20 +1,15 @@
-# ==============================================================================
-# FICHIER DE BASE : reseau + volumes partages.
-#
-# Il ne declare AUCUN service : chaque composant apporte le sien dans son
-# propre fichier (compose.db.yml, compose.wordpress.yml, ...), depose par son
-# role Ansible. Docker Compose fusionne la liste donnee par COMPOSE_FILE (.env).
-#
-# Consequence : `cd {{ project_dir }} && docker compose ps` voit la stack
-# entiere, mais chaque partie reste deployable seule.
-# ==============================================================================
+# Fichier de base : le réseau et les volumes, rien d'autre.
+# Chaque composant apporte son propre service dans son fichier (compose.db.yml,
+# compose.wordpress.yml...), déposé par son rôle. Docker fusionne la liste
+# donnée par COMPOSE_FILE dans le .env.
 
 networks:
   wp_network:
     driver: bridge
 
-# Volumes NOMMES (et non bind mounts) : ils apparaissent dans `docker volume ls`
-# et s'inspectent avec `docker volume inspect`, comme demande en soutenance.
+# Volumes NOMMÉS (pas des bind mounts) : ils apparaissent dans docker volume ls
+# et s'inspectent avec docker volume inspect. Les données survivent à la
+# destruction des conteneurs.
 volumes:
-  mysql_data:   # base de donnees
-  wp_data:      # fichiers du site (themes, uploads, plugins)
+  mysql_data:   # la base
+  wp_data:      # les fichiers du site (images, thèmes, plugins)
