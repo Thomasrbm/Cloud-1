@@ -3,12 +3,24 @@ LES 3 PAGES A OUVRIR DANS LE NAVIGATEUR
 
 WordPress
 => https://13.60.218.238/
+   pas de login, c'est le site public
 
 Administration WordPress
 => https://13.60.218.238/wp-admin
+   user : thomas
 
 phpMyAdmin
 => https://13.60.218.238/phpmyadmin/
+   user : wp_user    (ou root pour tout voir)
+
+
+Les mots de passe ne sont PAS ecrits ici : le depot est public.
+Ils sont dans le vault, chiffres en AES-256.
+=> ansible-vault view group_vars/webservers.yml
+
+  wp_admin_password    -> thomas, sur /wp-admin
+  mysql_password       -> wp_user, sur phpMyAdmin
+  mysql_root_password  -> root, sur phpMyAdmin
 
 
 Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
