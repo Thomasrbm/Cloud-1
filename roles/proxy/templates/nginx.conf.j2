@@ -1,9 +1,13 @@
+
+
 # HTTP -> redirection HTTPS
 server {
     listen 80 default_server;
     server_name _;
     return 301 https://$host{% if https_port | int != 443 %}:{{ https_port }}{% endif %}$request_uri;
 }
+
+
 
 # Serveur HTTPS par défaut : WordPress à la racine, phpMyAdmin sur /phpmyadmin/.
 # Accessible directement par l'IP du serveur (aucun domaine requis).
@@ -17,7 +21,12 @@ server {
     root /var/www/html;
     index index.php;
 
-    # DEMO : decommenter les 4 lignes ci-dessous, puis
+
+
+
+
+    # A DECOMMENTER 
+
     #   ansible-playbook playbook.yml --tags proxy --ask-vault-pass
     # La page https://<IP>/preuve apparait en 15 s. Elle montre la chaine
     # complete : ce template -> Ansible -> /opt/wordpress/nginx/nginx.conf ->
@@ -27,14 +36,15 @@ server {
     #     return 200 '<h1>Deploye par Ansible</h1><p>Thomas - Cloud-1</p>';
     # }
 
+
+
+
+
+
     # phpMyAdmin
     location = /phpmyadmin {
         return 301 /phpmyadmin/;
     }
-    # ^~ est indispensable : sans lui, nginx teste quand meme le bloc regex
-    # \.php$ plus bas, qui l'emporte sur un simple prefixe. /phpmyadmin/index.php
-    # partait alors vers le php-fpm de WordPress, qui repondait "File not found."
-    # Avec ^~, des que le prefixe correspond nginx arrete de chercher.
     location ^~ /phpmyadmin/ {
         proxy_pass http://phpmyadmin:80/;
         proxy_set_header Host $host;
@@ -43,10 +53,15 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+
+
+
     # WordPress
     location / {
         try_files $uri $uri/ /index.php?$args;
     }
+
+
 
     location ~ \.php$ {
         fastcgi_pass wordpress:9000;
