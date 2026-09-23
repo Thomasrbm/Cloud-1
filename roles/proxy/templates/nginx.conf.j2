@@ -17,6 +17,16 @@ server {
     root /var/www/html;
     index index.php;
 
+    # DEMO : decommenter les 4 lignes ci-dessous, puis
+    #   ansible-playbook playbook.yml --tags proxy --ask-vault-pass
+    # La page https://<IP>/preuve apparait en 15 s. Elle montre la chaine
+    # complete : ce template -> Ansible -> /opt/wordpress/nginx/nginx.conf ->
+    # le conteneur nginx -> le navigateur. Rien d'autre n'est touche.
+    # location = /preuve {
+    #     default_type text/html;
+    #     return 200 '<h1>Deploye par Ansible</h1><p>Thomas - Cloud-1</p>';
+    # }
+
     # phpMyAdmin
     location = /phpmyadmin {
         return 301 /phpmyadmin/;
