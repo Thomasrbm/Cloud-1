@@ -21,7 +21,11 @@ server {
     location = /phpmyadmin {
         return 301 /phpmyadmin/;
     }
-    location /phpmyadmin/ {
+    # ^~ est indispensable : sans lui, nginx teste quand meme le bloc regex
+    # \.php$ plus bas, qui l'emporte sur un simple prefixe. /phpmyadmin/index.php
+    # partait alors vers le php-fpm de WordPress, qui repondait "File not found."
+    # Avec ^~, des que le prefixe correspond nginx arrete de chercher.
+    location ^~ /phpmyadmin/ {
         proxy_pass http://phpmyadmin:80/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
