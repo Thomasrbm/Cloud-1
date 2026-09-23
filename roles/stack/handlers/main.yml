@@ -1,8 +1,11 @@
 ---
-# Un changement de secret ou de reseau impose de RECREER les conteneurs :
-# `up -d` seul ne suffit pas, les variables d'environnement sont figees au
-# lancement du conteneur.
+# est appelé si changement dans certaines config
+
 - name: Recreate stack
+  # --force-recreate car les variables d'env sont figées au lancement du
+  # conteneur : un simple up -d ne relirait pas le nouveau .env.
+  # --remove-orphans suppr les anciens docker zombie
   command: docker compose up -d --force-recreate --remove-orphans
   args:
+  # se met dans l'endroit ou il y a le docker compose pour pouvoir le lancer
     chdir: "{{ project_dir }}"

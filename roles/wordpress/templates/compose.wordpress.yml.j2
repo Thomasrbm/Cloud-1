@@ -1,4 +1,4 @@
-# Composant APPLICATIF (PHP). Depose par le role Ansible `wordpress`.
+# Le site (PHP). Déposé par le rôle wordpress.
 services:
   wordpress:
     image: wordpress:php8.1-fpm
@@ -11,14 +11,15 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - wp_data:/var/www/html
+      - wp_data:/var/www/html   # volume nommé : le site survit au reboot
     networks:
       - wp_network
-    # Variante -fpm : PHP seul, sans serveur web embarque. C'est nginx qui
-    # ecoute sur 80/443 et transmet le PHP ici, sur 9000 (fastcgi), en interne.
+    # Variante -fpm : PHP tout seul, sans serveur web. C'est nginx qui écoute
+    # sur 80/443 et lui passe le PHP en interne, sur 9000.
 
-  # wp-cli : outil en ligne de commande. `profiles` l'empeche de demarrer avec
-  # la stack, il n'est lance qu'a la demande et disparait aussitot (--rm).
+  # Outil en ligne de commande WordPress. 'profiles' l'empeche de demarrer avec
+  # la stack : il n'est lance qu'a la demande, par 'docker compose run wpcli ...'
+  # (conteneur ephemere, supprime des la commande terminee).
   wpcli:
     image: wordpress:cli
     profiles:
@@ -32,6 +33,7 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
+      # Meme volume que WordPress : wp-cli agit sur les memes fichiers.
       - wp_data:/var/www/html
     networks:
       - wp_network

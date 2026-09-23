@@ -1,7 +1,10 @@
 ---
-# nginx.conf est monte en bind mount : modifier le fichier ne suffit pas,
-# il faut relancer le conteneur pour que nginx relise sa configuration.
+# est appelé si changement dans certaines config
+
 - name: Restart nginx
+  # nginx.conf est monté depuis le disque : modifier le fichier ne suffit pas,
+  # il faut relancer le conteneur pour que nginx relise sa config.
   command: docker compose restart nginx
   args:
+  # se met dans l'endroit ou il y a le docker compose pour pouvoir le lancer
     chdir: "{{ project_dir }}"

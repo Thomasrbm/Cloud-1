@@ -16,28 +16,28 @@ https_port: 443
 # ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
 allow_root_ssh: true
 
-# --- Memoire (role swap) -----------------------------------------------------
-# Le t3.micro n'a que 1 Go de RAM et aucun swap : un `apt install` lance a cote
-# de MySQL suffit a saturer la machine. Ce fichier d'echange sert de filet.
-# Mets swap_enabled a false sur un serveur qui a deja assez de RAM.
+# --- Le swap -----------------------------------------------------------------
+# Le t3.micro n'a qu'1 Go de RAM et AWS ne fournit aucun swap : un apt install
+# lancé à côté de MySQL suffit à saturer la machine. Ce fichier d'échange sert
+# juste de filet. A mettre à false sur un serveur qui a déjà assez de RAM.
 swap_enabled: true
 swap_file: /swapfile
 swap_size_mb: 2048
 swap_swappiness: 10
 
-# --- Composition de la stack -------------------------------------------------
-# Chaque composant apporte son propre fichier compose ; Docker les fusionne
-# dans cet ordre. La liste est ecrite dans le .env (variable COMPOSE_FILE), ce
-# qui permet a un simple `docker compose ps` de voir les 4 services d'un coup.
+# --- Les fichiers compose ----------------------------------------------------
+# Chaque composant apporte le sien, Docker les fusionne dans cet ordre.
+# La liste part dans le .env (COMPOSE_FILE) : du coup un simple
+# docker compose ps voit les 4 services d'un coup.
 compose_files:
-  - docker-compose.yml       # socle : reseau + volumes nommes (role stack)
-  - compose.db.yml           # MySQL                           (role db)
-  - compose.wordpress.yml    # php-fpm + wp-cli                (role wordpress)
-  - compose.phpmyadmin.yml   # phpMyAdmin                      (role phpmyadmin)
-  - compose.proxy.yml        # nginx + TLS                     (role proxy)
+  - docker-compose.yml       # le socle : reseau + volumes  (role stack)
+  - compose.db.yml           # MySQL                        (role db)
+  - compose.wordpress.yml    # php-fpm + wp-cli             (role wordpress)
+  - compose.phpmyadmin.yml   # phpMyAdmin                   (role phpmyadmin)
+  - compose.proxy.yml        # nginx + TLS                  (role proxy)
 
 # --- WordPress ---------------------------------------------------------------
-# Installe automatiquement par wp-cli (role app) : le site est pret a l'emploi
+# Installe automatiquement par wp-cli (role wordpress) : le site est pret a l'emploi
 # des la fin du playbook, sans passer par le formulaire d'installation.
 # wp_admin_password est un secret : il vit dans group_vars/webservers.yml (vault).
 wp_site_url: "https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}"

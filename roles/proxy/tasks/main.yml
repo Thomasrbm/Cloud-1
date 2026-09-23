@@ -1,9 +1,15 @@
 ---
+
 # ==============================================================================
-# ROLE PROXY : nginx, le TLS, et la convergence finale de la stack.
-# C'est le seul composant expose sur Internet (80 et 443).
+# RÔLE REVERSE-PROXY (PROXY)
+
+# nginx et le TLS : le seul composant exposé sur Internet (80 et 443).
+# C'est aussi le dernier rôle du playbook, donc c'est lui qui fait la passe
+# finale sur toute la stack.
 # ==============================================================================
 
+
+# Bloc 1 : arborescence
 - name: Create nginx and ssl directories
   file:
     path: "{{ item }}"
@@ -11,31 +17,39 @@
     mode: '0755'
   loop:
     - "{{ project_dir }}/nginx"
-    - "{{ project_dir }}/ssl"
+    - "{{ project_dir }}/ssl"     # certificats
 
-# `creates:` rend la tache idempotente : le certificat n'est genere qu'une fois.
+
+# Bloc 2 : Génération auto certif TLS (HTTPS)
 - name: Generate self-signed SSL certificate
+  # > : colle tout et add un \n
   command: >
     openssl req -x509 -nodes -days 365 -newkey rsa:2048
     -keyout {{ project_dir }}/ssl/key.pem
     -out {{ project_dir }}/ssl/cert.pem
     -subj "/C=FR/ST=LeHavre/L=LeHavre/O=42/CN={{ domain_name }}"
-  args:
-    creates: "{{ project_dir }}/ssl/cert.pem"
+  args:  # control en + sur une cmd
+    creates: "{{ project_dir }}/ssl/cert.pem" # si existe deja, refait pas la commande
 
+
+# Bloc 3 : ngninx
 - name: Deploy nginx config
-  template:
-    src: nginx.conf.j2
-    dest: "{{ project_dir }}/nginx/nginx.conf"
+  template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
+    src: nginx.conf.j2                     # Le fichier modèle sur ton ordinateur personnel
+    dest: "{{ project_dir }}/nginx/nginx.conf" # La destination sur le serveur distant
     mode: '0644'
-  notify: Restart nginx
+  notify: Restart nginx # Si la config change, Ansible appellera un "handler" pour relancer nginx
 
+
+# Bloc 4 : copie le compose du proxy
 - name: Deploy the proxy compose file
   template:
     src: compose.proxy.yml.j2
     dest: "{{ project_dir }}/compose.proxy.yml"
     mode: '0644'
 
+
+# Bloc 5 : lance ou maj le docker nginx
 - name: Start nginx
   command: docker compose up -d nginx
   args:
@@ -45,9 +59,11 @@
     ('Started' in nginx_up.stderr) or ('Created' in nginx_up.stderr)
     or ('Recreated' in nginx_up.stderr)
 
-# Dernier role du playbook : une passe complete garantit que les 4 services
-# correspondent bien aux fichiers compose, et supprime les conteneurs orphelins.
-# Commande nue : elle lit COMPOSE_FILE dans le .env et voit donc toute la stack.
+
+# Bloc 6 : passe finale sur toute la stack
+# Une commande nue : elle lit COMPOSE_FILE dans le .env, donc elle voit les 4
+# services d'un coup. Ça vérifie qu'ils correspondent bien aux fichiers compose
+# et ça vire les conteneurs orphelins.
 - name: Converge the whole stack
   command: docker compose up -d --remove-orphans
   args:

@@ -1,41 +1,43 @@
 ---
 # Fichier principal d'orchestration pour le projet
 - name: Deploy WordPress stack
-  # la cible ( liste definie dans inventory.ini )
+  # la cible ( list defini dans inventory.ini )
   hosts: webservers
-  # execute les operations en root sur les serveurs
-  become: true   # Requis pour installer des paquets et modifier le pare-feu
+  # execute les opération en root sur les servers
+  become: true # Requis pour installer des paquets et modifier le pare-feu
 
-  # Ansible va chercher dans roles/<nom>/tasks/main.yml et l'execute.
-  # Les 4 premiers roles PREPARENT la machine, les 5 suivants sont un
-  # composant chacun : chaque partie se deploie seule avec --tags.
+
+  # va chercher dans le dossier roles puis task et executer le main de chaque
+  # sous dossier role/task.
+  # Les 4 premiers préparent la machine, les 5 suivants sont un composant
+  # chacun : une partie se déploie toute seule avec --tags.
   #   ansible-playbook playbook.yml --tags db --ask-vault-pass
   roles:
-    # --- Preparation de la machine -------------------------------------------
-    # 0. Autorise les cles publiques des autres machines + l'acces root
+    # --- on prépare la machine -----------------------------------------------
+    # 0. Autorise les clés publiques des autres machines (portable, poste 42)
     - { role: ssh_access, tags: ['ssh'] }
 
-    # 1. Ajoute un fichier d'echange (1 Go de RAM, aucun swap sur AWS)
+    # 1. Ajoute un fichier d'échange (1 Go de RAM sur l'EC2, aucun swap fourni)
     - { role: swap,       tags: ['swap', 'system'] }
 
-    # 2. Installe le moteur Docker
+    # 2. Prépare la machine en installant le moteur Docker
     - { role: docker,     tags: ['docker'] }
 
-    # 3. Ferme les ports inutiles (seuls ouverts : 22, 80, 443)
+    # 3. Sécurise le serveur en fermant les ports inutiles (seuls accessible : 22, 80, 443)
     - { role: ufw,        tags: ['ufw', 'security'] }
 
-    # --- Un role = un composant de la stack ----------------------------------
-    # 4. Socle : dossier projet, .env (secrets), reseau et volumes nommes
+    # --- un rôle = un composant de la stack ----------------------------------
+    # 4. Le socle : dossier du projet, .env (secrets), réseau et volumes
     - { role: stack,      tags: ['stack'] }
 
-    # 5. Base de donnees MySQL (aucun port publie)
+    # 5. La base de données MySQL (aucun port publié)
     - { role: db,         tags: ['db'] }
 
-    # 6. Runtime PHP WordPress + installation du site par wp-cli
+    # 6. WordPress en php-fpm + l'installation du site par wp-cli
     - { role: wordpress,  tags: ['wordpress', 'wp'] }
 
-    # 7. Interface d'administration de la base
+    # 7. L'interface d'administration de la base
     - { role: phpmyadmin, tags: ['phpmyadmin', 'pma'] }
 
-    # 8. Reverse-proxy nginx + TLS : le seul composant expose sur Internet
+    # 8. nginx et le TLS : le seul composant exposé sur Internet
     - { role: proxy,      tags: ['proxy', 'nginx'] }
