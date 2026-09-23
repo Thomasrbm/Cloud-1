@@ -30,12 +30,17 @@ et pour l'accès root exigé
 exec script 2 endroits
 
 
+modifier dans le inventory.ini
 
-echo 'server2 ansible_host=<IP_2> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/cloud1-aws.pem' >> inventory.ini
-ansible-playbook playbook.yml --ask-vault-pass
+ansible-playbook playbook.yml --limit server2 --skip-tags ssh,ufw --ask-vault-pass
 
 
 
++
+
+decommenter  dans rp;es/proxy/template/nginx.conf
+
+aller sur  https://13.60.218.238/preuve
 
 
 
@@ -44,7 +49,21 @@ ansible-playbook playbook.yml --ask-vault-pass
 
 
 
+same 
+
+
+
+
+
 2.2/   plusieurs role ?  capable deploy indep
+
+
+down phpmyadmin =>
+ansible webservers -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose rm -sf phpmyadmin"
+
+
+ansible-playbook playbook.yml --tags phpmyadmin --ask-vault-pass
+
 
 
 
@@ -53,13 +72,53 @@ ansible-playbook playbook.yml --ask-vault-pass
 
 
 
+ sudo grep -rn "password" --include='*.yml' --include='*.j2' --include='*.cfg' . | grep -v vault 
 
 
+montrer le crypted => 
+
+head -3 group_vars/webservers.yml
+
+ansible-vault view group_vars/webservers.yml
+
+
+
+.env protected  =>
+
+ansible server1 -b --ask-vault-pass -a "ls -l /opt/wordpress/.env"
 
 ==============================
 
 
 3/ docker compose a cache? 
+
+on construit aucune image , on prend que des offi 
+legeres =>
+
+
+find . -name "Dockerfile*"
+
+ansible server1 -b --ask-vault-pass -a "docker images"
+
+
+pas de build:  que des image: 
+
+
+si avait image : 
+
+
+COPY . /app          ← change à chaque commit
+RUN apt install php  ← rebuild à chaque fois, 2 min perdues
+Bon ordre
+
+RUN apt install php  ← en cache, jamais rejoué
+COPY . /app          ← seule couche reconstruite
+
+
+
+
+
+
 
 
 3.1/ container separed ? un pour db, php run , web proxy
@@ -67,9 +126,94 @@ ils communique ensemble ?
 
 
 
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose ps"
+
+
+
+
+
+ansible server1 -b --ask-vault-pass -a "docker network inspect wordpress_wp_network" | grep -E '"Name"|Driver|Subnet'
+
+====> meme bridge 
+
+
+
+
+
+
+
+
+
+
+
+
 3.2/ data stored ans volume mouted ?  on peut voir en admin ? 
+
+
+
+ansible server1 -b --ask-vault-pass -a "docker volume ls"
+
+
+
+ou sont stock : 
+ansible server1 -b --ask-vault-pass -a "docker volume inspect wordpress_wp_data"
+
+
+
+
+seul admin peut voir ? 
+
+
+ansible server1 -b --ask-vault-pass -a "ls -ld /var/lib/docker /var/lib/docker/volumes"
+
+drwx--x--- => seul root
+
+
+
+
+
+
 
 
 
 3.3/ on peut launch tous les container d un cuop ?  les restart individualy ? 
 
+
+tous down :
+
+
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose down"
+
+
+tous up : 
+
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose up -d"
+
+
+
+
+un par un : 
+
+
+
+mysql
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose stop mysql"
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose start mysql"
+
+
+
+wordpress
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose stop wordpress"
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose start wordpress"
+
+
+
+phpmyadmin
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose stop phpmyadmin"
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose start phpmyadmin"
+
+
+
+nginx
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose stop nginx"
+ansible server1 -b --ask-vault-pass -a "chdir=/opt/wordpress docker compose start nginx"
