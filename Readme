@@ -39,9 +39,13 @@ IDEMPOTENCE
 
 
 AUTRES FICHIERS
-  CORREC.txt      toutes les commandes de la soutenance
-  SECRETS.txt     generer, chiffrer et utiliser le vault
-  CONTAINERS.txt  volumes, images, orchestration : les reponses de la grille
+  Les fiches sont dans le dossier txt/ :
+    txt/acces.txt         tous les liens du projet
+    txt/CORREC.txt        toutes les commandes de la soutenance
+    txt/SECRETS.txt       generer, chiffrer et utiliser le vault
+    txt/CONTAINERS.txt    volumes, images, orchestration : les reponses de la grille
+    txt/exec_playbook.txt comment lire un run du playbook
+    txt/vault.txt         le chemin des secrets
   AWS.md          creation et configuration de l'instance EC2
 
   Desinstallation totale pour rejouer la demo :

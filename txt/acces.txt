@@ -31,7 +31,7 @@ Les modifier
 => ansible-vault edit group_vars/webservers.yml
 
 Detail du mecanisme
-=> cat SECRETS.txt
+=> cat txt/SECRETS.txt
 
 
 --- SE CONNECTER AU SERVEUR ----------------------------------------------
@@ -73,7 +73,7 @@ Cloner sur une machine neuve
 --- SI L'IP A CHANGE -----------------------------------------------------
 
 Recuperer la nouvelle IP dans la console AWS (EC2 > Instances), puis
-=> sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini acces.txt CORREC.txt
+=> sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini txt/acces.txt txt/CORREC.txt
 => ansible-playbook playbook.yml --ask-vault-pass
 
 Pour ne plus jamais la voir changer : attribuer une Elastic IP a l'instance
@@ -82,9 +82,12 @@ Pour ne plus jamais la voir changer : attribuer une Elastic IP a l'instance
 
 --- LES AUTRES FICHIERS --------------------------------------------------
 
-CORREC.txt       toutes les commandes de la soutenance
-SECRETS.txt      generer, chiffrer et utiliser le vault
-CONTAINERS.txt   volumes, images, orchestration
-exec_playbook.txt  comment lire un run du playbook
-AWS.md           creation et configuration de l'instance EC2
-Readme           les roles et le fonctionnement general
+Les fiches sont toutes dans le dossier txt/ :
+
+txt/CORREC.txt         toutes les commandes de la soutenance
+txt/SECRETS.txt        generer, chiffrer et utiliser le vault
+txt/CONTAINERS.txt     volumes, images, orchestration
+txt/exec_playbook.txt  comment lire un run du playbook
+txt/vault.txt          le chemin des secrets, de group_vars au conteneur
+AWS.md                 creation et configuration de l'instance EC2
+Readme                 les roles et le fonctionnement general
