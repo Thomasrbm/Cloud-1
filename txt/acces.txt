@@ -8,19 +8,15 @@ WordPress
 Administration WordPress
 => https://13.60.218.238/wp-admin
    user : thomas
+   mdp  : ZFVfIinA35riVnFHFYJLthJ0
 
 phpMyAdmin
 => https://13.60.218.238/phpmyadmin/
-   user : wp_user    (ou root pour tout voir)
-
-
-Les mots de passe ne sont PAS ecrits ici : le depot est public.
-Ils sont dans le vault, chiffres en AES-256.
-=> ansible-vault view group_vars/webservers.yml
-
-  wp_admin_password    -> thomas, sur /wp-admin
-  mysql_password       -> wp_user, sur phpMyAdmin
-  mysql_root_password  -> root, sur phpMyAdmin
+   user : wp_user
+   mdp  : METS_LE_MYSQL_PASSWORD
+   ---
+   user : root
+   mdp  : METS_LE_MYSQL_ROOT_PASSWORD
 
 
 Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
