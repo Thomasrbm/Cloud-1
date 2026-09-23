@@ -1,0 +1,75 @@
+
+
+
+1/  port 80 et 443  +  databse juste acc sur les ports necessaire ? 
+
+nmap -Pn 13.60.218.238
+Vu de l'extérieur, seuls 22/80/443 sont ouverts 
+et 3306 absents.
+
+
+
+22 est indispensable pour qu'Ansible déploie
+et pour l'accès root exigé
+
+
+==> car cest le port ssh et ansible ne parle que par ca 
+
+
+
+
+
+
+
+
+==============================
+
+
+
+2.0/ ansible deployement script  code from machin to vps
+exec script 2 endroits
+
+
+
+echo 'server2 ansible_host=<IP_2> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/cloud1-aws.pem' >> inventory.ini
+ansible-playbook playbook.yml --ask-vault-pass
+
+
+
+
+
+
+
+2.1/  idempotency ? 
+
+
+
+2.2/   plusieurs role ?  capable deploy indep
+
+
+
+
+2.3/ pas de hard code secrets (mdp db, ou dans le code)
+
+
+
+
+
+
+==============================
+
+
+3/ docker compose a cache? 
+
+
+3.1/ container separed ? un pour db, php run , web proxy
+ils communique ensemble ? 
+
+
+
+3.2/ data stored ans volume mouted ?  on peut voir en admin ? 
+
+
+
+3.3/ on peut launch tous les container d un cuop ?  les restart individualy ? 
+
