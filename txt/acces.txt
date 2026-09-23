@@ -1,93 +1,15 @@
-ACCES : tous les liens du projet au meme endroit.
+LES 3 PAGES A OUVRIR DANS LE NAVIGATEUR
 
-IP publique de l'instance : 13.60.218.238
-Elle change a chaque arret/redemarrage de l'EC2 -> voir la derniere section.
-
-
---- LE SITE --------------------------------------------------------------
 
 WordPress
 => https://13.60.218.238/
 
-Administration WordPress   (user : thomas)
+Administration WordPress
 => https://13.60.218.238/wp-admin
 
-phpMyAdmin                 (user : wp_user, ou root)
+phpMyAdmin
 => https://13.60.218.238/phpmyadmin/
 
-Le navigateur affiche "Connexion non securisee" : le certificat TLS est
-auto-signe par le role proxy. Avance -> Continuer. C'est normal.
-http:// bascule tout seul en https:// (nginx renvoie un 301).
 
-
---- LES MOTS DE PASSE ----------------------------------------------------
-
-Aucun mot de passe n'est ecrit ici : ils vivent dans le vault.
-
-Les lire
-=> ansible-vault view group_vars/webservers.yml
-
-Les modifier
-=> ansible-vault edit group_vars/webservers.yml
-
-Detail du mecanisme
-=> cat txt/SECRETS.txt
-
-
---- SE CONNECTER AU SERVEUR ----------------------------------------------
-
-En tant qu'ubuntu, avec la cle .pem d'AWS
-=> ssh -i ~/.ssh/cloud1-aws.pem ubuntu@13.60.218.238
-
-En tant que root (exige en soutenance, debloque par le role ssh_access)
-=> ssh root@13.60.218.238
-
-Sans se connecter, depuis ma machine
-=> ansible webservers -m ping --ask-vault-pass
-
-
---- VOIR LA STACK --------------------------------------------------------
-
-Les 4 conteneurs
-=> ansible webservers -b -a "docker ps" --ask-vault-pass
-
-Les volumes
-=> ansible webservers -b -a "docker volume ls" --ask-vault-pass
-
-Le pare-feu
-=> ansible webservers -b -a "ufw status" --ask-vault-pass
-
-Le site repond ?
-=> curl -k -I https://13.60.218.238/
-
-
---- LE DEPOT -------------------------------------------------------------
-
-GitHub
-=> https://github.com/Thomasrbm/Cloud-1
-
-Cloner sur une machine neuve
-=> git clone https://github.com/Thomasrbm/Cloud-1.git
-
-
---- SI L'IP A CHANGE -----------------------------------------------------
-
-Recuperer la nouvelle IP dans la console AWS (EC2 > Instances), puis
-=> sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini txt/acces.txt txt/CORREC.txt
-=> ansible-playbook playbook.yml --ask-vault-pass
-
-Pour ne plus jamais la voir changer : attribuer une Elastic IP a l'instance
-(console AWS > Elastic IPs > Allocate, puis Associate sur l'instance).
-
-
---- LES AUTRES FICHIERS --------------------------------------------------
-
-Les fiches sont toutes dans le dossier txt/ :
-
-txt/CORREC.txt         toutes les commandes de la soutenance
-txt/SECRETS.txt        generer, chiffrer et utiliser le vault
-txt/CONTAINERS.txt     volumes, images, orchestration
-txt/exec_playbook.txt  comment lire un run du playbook
-txt/vault.txt          le chemin des secrets, de group_vars au conteneur
-AWS.md                 creation et configuration de l'instance EC2
-Readme                 les roles et le fonctionnement general
+Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
+Avance -> Continuer.
