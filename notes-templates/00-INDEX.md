@@ -1,44 +1,47 @@
-# Templates Ansible génériques (tirés de Cloud-1)
+# Templates Ansible génériques (Cloud-1)
 
-Un fichier `.md` = un type de fichier du projet, prêt à copier-coller.
-Remplace tous les `<PLACEHOLDERS>` par tes valeurs.
+Une note par type de fichier. Chaque note contient :
 
-## Placeholders utilisés partout
+- **À quoi sert le fichier**
+- **Le fichier complet**, sans commentaires, prêt à copier
+- **L'explication ligne par ligne**, en dehors des blocs de code
 
-| Placeholder | Exemple | Sens |
-|---|---|---|
-| `<IP_SERVEUR>` | `13.60.x.x` | IP publique du serveur cible |
-| `<SSH_USER>` | `ubuntu` / `root` | Utilisateur SSH |
-| `<CHEMIN_CLE_PRIVEE>` | `~/.ssh/ma-cle.pem` | Clé privée SSH (chmod 400) |
-| `<NOM_GROUPE>` | `webservers` | Groupe d'hôtes de l'inventaire |
-| `<NOM_HOTE>` | `server1` | Alias d'un hôte |
-| `<PROJECT_DIR>` | `/opt/monapp` | Dossier du projet sur le serveur |
-| `<DOMAINE>` | `monsite.fr` / `localhost` | Nom de domaine |
-| `<NOM_ROLE>` | `db`, `proxy`... | Nom d'un rôle |
-| `<NOM_SERVICE>` | `mysql`, `nginx`... | Service docker compose |
-| `<NOM_RESEAU>` | `app_network` | Réseau docker |
-| `<NOM_VOLUME>` | `db_data` | Volume docker nommé |
-| `<IMAGE>:<TAG>` | `mysql:8.0` | Image docker |
-| `<MDP_...>` | — | Secrets (à mettre dans le vault) |
+## Placeholders à remplacer
+
+- `<IP_SERVEUR>` : IP publique du serveur (ex : 13.60.10.20)
+- `<SSH_USER>` : utilisateur SSH (ex : ubuntu sur AWS, ou root)
+- `<CHEMIN_CLE_PRIVEE>` : chemin de la clé privée (ex : ~/.ssh/ma-cle.pem)
+- `<NOM_GROUPE>` : nom du groupe de serveurs (ex : webservers)
+- `<NOM_HOTE>` : surnom d'un serveur (ex : server1)
+- `<PROJECT_DIR>` : dossier du projet sur le serveur (ex : /opt/wordpress)
+- `<DOMAINE>` : nom de domaine (ex : localhost)
+- `<NOM_ROLE>` : nom d'un rôle (ex : db, proxy)
+- `<NOM_SERVICE>` : nom d'un service docker compose (ex : mysql, nginx)
+- `<NOM_RESEAU>` : réseau docker (ex : wp_network)
+- `<NOM_VOLUME>` : volume docker nommé (ex : mysql_data)
+- `<IMAGE>:<TAG>` : image docker (ex : mysql:8.0)
+- `<MDP_...>` : mot de passe, à mettre dans le vault
 
 ## Sommaire
 
-| Fichier | Contenu |
-|---|---|
-| `01-arborescence.md` | Structure d'un projet Ansible + rôles |
-| `02-ansible.cfg.md` | Config Ansible |
-| `03-inventory.ini.md` | Inventaire des serveurs |
-| `04-playbook.yml.md` | Playbook principal (liste des rôles + tags) |
-| `05-requirements.yml.md` | Collections Galaxy |
-| `06-group_vars-all.yml.md` | Variables en clair |
-| `07-group_vars-vault.md` | Secrets chiffrés (ansible-vault) |
-| `08-role-tasks.md` | `roles/*/tasks/main.yml` : tous les patterns de tâches |
-| `09-role-handlers.md` | `roles/*/handlers/main.yml` |
-| `10-role-exemples-systeme.md` | Rôles système complets : docker, ufw, swap, ssh |
-| `11-docker-compose-base.yml.j2.md` | Compose socle (réseau + volumes) |
-| `12-compose-service.yml.j2.md` | Compose par service (db, app php, admin, proxy) |
-| `13-env.j2.md` | Template `.env` |
-| `14-nginx.conf.j2.md` | Reverse proxy nginx + TLS + php-fpm |
-| `15-teardown.yml.md` | Playbook de désinstallation |
-| `16-gitignore-et-cles-ssh.md` | `.gitignore` + fichiers `.pub` |
-| `17-commandes.md` | Toutes les commandes utiles (anti-sèche) |
+- `01-arborescence.md` : structure d'un projet Ansible
+- `02-ansible.cfg.md` : configuration d'Ansible
+- `03-inventory.ini.md` : liste des serveurs
+- `04-playbook.yml.md` : playbook principal
+- `05-requirements.yml.md` : collections à installer
+- `06-group_vars-all.yml.md` : variables en clair
+- `07-group_vars-vault.md` : secrets chiffrés
+- `08-role-tasks.md` : les briques de tâches
+- `09-role-handlers.md` : les handlers
+- `10-role-docker.md` : rôle d'installation de Docker
+- `11-role-ufw.md` : rôle pare-feu
+- `12-role-swap.md` : rôle swap
+- `13-role-ssh-access.md` : rôle accès SSH
+- `14-role-stack.md` : rôle socle (dossier, .env, compose de base)
+- `15-docker-compose-base.yml.j2.md` : compose socle
+- `16-compose-services.yml.j2.md` : compose par service
+- `17-env.j2.md` : fichier .env
+- `18-nginx.conf.j2.md` : nginx reverse proxy
+- `19-teardown.yml.md` : désinstallation
+- `20-gitignore-et-cles-ssh.md` : .gitignore et clés
+- `21-commandes.md` : aide-mémoire des commandes
