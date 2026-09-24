@@ -1,61 +1,52 @@
 # roles/ufw/tasks/main.yml
 
-## À quoi ça sert
-
-Pare-feu : bloque toutes les connexions entrantes sauf SSH, HTTP et HTTPS.
-
-## Le fichier
+- Pare-feu : bloque tout ce qui entre sauf SSH, HTTP, HTTPS
+- Module `community.general.ufw` (à mettre dans requirements.yml)
 
 ```yaml
 ---
+# installe le pare-feu
 - name: Install ufw
   apt:
     name: ufw
     state: present
     update_cache: true
 
+# par défaut, tout ce qui entre est refusé
 - name: Default deny incoming
   community.general.ufw:
     direction: incoming
     policy: deny
 
+# le serveur peut sortir sur Internet (mises à jour, images docker)
 - name: Default allow outgoing
   community.general.ufw:
     direction: outgoing
     policy: allow
 
+# exceptions ouvertes en TCP
 - name: Allow needed ports
   community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
   loop:
+    # SSH : à ouvrir AVANT d'activer le pare-feu, sinon tu perds l'accès
     - "22"
+    # HTTP
     - "80"
+    # HTTPS
     - "443"
+    # autre port si besoin
+    # - "<AUTRE_PORT>"
 
+# active le pare-feu
 - name: Enable ufw
   community.general.ufw:
     state: enabled
 ```
 
-## Tâche par tâche
-
-- **Install ufw** : installe le pare-feu
-- **Default deny incoming** : par défaut, tout ce qui entre est refusé
-- **Default allow outgoing** : le serveur peut sortir sur Internet (mises à jour, images docker)
-- **Allow needed ports** : exceptions ouvertes en TCP
-  - `22` : SSH, à ouvrir AVANT d'activer le pare-feu sinon tu perds l'accès
-  - `80` : HTTP
-  - `443` : HTTPS
-  - Ajoute `"<AUTRE_PORT>"` dans la liste si besoin
-- **Enable ufw** : active le pare-feu
-- `community.general.ufw` : module de la collection `community.general`, à mettre dans `requirements.yml`
-
-## Vérifier
-
 ```bash
+# vérifier l'état et les ports ouverts
 sudo ufw status verbose
 ```
-
-- Affiche l'état du pare-feu et la liste des ports ouverts.

@@ -1,45 +1,28 @@
 # requirements.yml
 
-## À quoi ça sert
-
-Liste les collections (paquets de modules) à télécharger en plus d'Ansible. Par exemple le module `ufw` ne fait pas partie d'Ansible de base.
-
-## Le fichier
+- Collections (paquets de modules) à télécharger en plus d'Ansible de base
 
 ```yaml
 ---
 collections:
+  # fournit le module ufw (pare-feu)
   - name: community.general
+
+  # fournit authorized_key (clés SSH), mount (fstab), sysctl
   - name: ansible.posix
+
+  # (facultatif) modules pour piloter Docker directement
+  # - name: community.docker
+
+  # (facultatif) fixer une version précise
+  # - name: <COLLECTION>
+  #   version: "<VERSION>"
 ```
-
-## Ligne par ligne
-
-- `collections:` : liste des collections à installer
-- `community.general` : collection communautaire, fournit le module `ufw`
-- `ansible.posix` : fournit `authorized_key` (clés SSH), `mount` (fstab) et `sysctl`
-
-## Autres collections courantes
-
-```yaml
-  - name: community.docker
-  - name: <COLLECTION>
-    version: "<VERSION>"
-```
-
-- `community.docker` : modules pour piloter Docker directement
-- `version:` : fixe une version précise
-
-## Installer
 
 ```bash
+# installe toutes les collections de la liste
 ansible-galaxy collection install -r requirements.yml
-```
 
-- Télécharge toutes les collections de la liste.
-
-```bash
+# affiche les collections déjà installées
 ansible-galaxy collection list
 ```
-
-- Affiche les collections déjà installées.
