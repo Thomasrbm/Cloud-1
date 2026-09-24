@@ -3,74 +3,50 @@
 ## .gitignore
 
 ```gitignore
+# le vault chiffré group_vars/<NOM_GROUPE>.yml PEUT aller sur git
+# ce qui ne doit JAMAIS y aller : clés privées et mot de passe du vault
+
+# clés privées AWS
 *.pem
+# autres clés privées
 *.key
+# fichiers créés par Ansible après un échec
 *.retry
+# secrets en clair
 .env
+# mot de passe du vault
 vault_pass.txt
 <FICHIER_MDP_VAULT>
 ```
 
-- `*.pem` : clés privées AWS
-- `*.key` : autres clés privées
-- `*.retry` : fichiers créés par Ansible après un échec
-- `.env` : fichier de secrets en clair
-- `vault_pass.txt` / `<FICHIER_MDP_VAULT>` : mot de passe du vault
-- Le vault chiffré `group_vars/<NOM_GROUPE>.yml` peut, lui, aller sur git
-
-## Fichier de clé publique
-
-```text
-ssh-ed25519 <CLE_PUBLIQUE_BASE64> <COMMENTAIRE>
-```
-
-- `ssh-ed25519` : type de clé
-- `<CLE_PUBLIQUE_BASE64>` : la clé elle-même
-- `<COMMENTAIRE>` : nom de la machine, pour s'y retrouver
-- Un fichier `.pub` par machine dans `roles/ssh_access/files/`
-
-## Commandes
+## Commandes clés SSH
 
 ```bash
+# crée une paire de clés (privée + publique) sur ta machine
 ssh-keygen -t ed25519 -C "<NOM_MACHINE>"
-```
 
-- Crée une paire de clés (privée + publique) sur ta machine.
-
-```bash
+# affiche la clé publique -> à coller dans roles/ssh_access/files/<NOM_MACHINE>.pub
 cat ~/.ssh/id_ed25519.pub
-```
 
-- Affiche la clé publique, à coller dans `roles/ssh_access/files/<NOM_MACHINE>.pub`.
-
-```bash
+# rend la clé lisible seulement par toi (SSH refuse une clé trop ouverte)
 chmod 400 <CHEMIN_CLE_PRIVEE>
-```
 
-- Rend la clé lisible seulement par toi. SSH refuse une clé trop ouverte.
-
-```bash
+# connexion avec une clé précise
 ssh -i <CHEMIN_CLE_PRIVEE> <SSH_USER>@<IP_SERVEUR>
-```
 
-- Connexion avec une clé précise.
-
-```bash
+# connexion en root (après le rôle ssh_access)
 ssh root@<IP_SERVEUR>
 ```
 
-- Connexion en root, possible après le rôle ssh_access.
-
-## Raccourci dans ~/.ssh/config
+## ~/.ssh/config (raccourci)
 
 ```text
+# ensuite "ssh <ALIAS>" suffit
 Host <ALIAS>
+    # vraie adresse
     HostName <IP_SERVEUR>
+    # utilisateur
     User <SSH_USER>
+    # clé à utiliser
     IdentityFile <CHEMIN_CLE_PRIVEE>
 ```
-
-- `Host` : surnom à taper, ensuite `ssh <ALIAS>` suffit
-- `HostName` : vraie adresse
-- `User` : utilisateur
-- `IdentityFile` : clé à utiliser

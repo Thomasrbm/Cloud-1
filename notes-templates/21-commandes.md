@@ -3,172 +3,100 @@
 ## Ansible
 
 ```bash
+# installe les collections nécessaires
 ansible-galaxy collection install -r requirements.yml
-```
 
-- Installe les collections nécessaires.
-
-```bash
+# teste la connexion SSH à tous les serveurs du groupe
 ansible <NOM_GROUPE> -m ping
-```
 
-- Teste la connexion SSH à tous les serveurs du groupe.
-
-```bash
+# affiche toutes les infos détectées sur le serveur (facts)
 ansible <NOM_GROUPE> -m setup
-```
 
-- Affiche toutes les infos détectées sur le serveur (facts).
-
-```bash
+# lance une commande ponctuelle sur les serveurs
 ansible <NOM_GROUPE> -a "uptime"
-```
 
-- Lance une commande ponctuelle sur les serveurs.
-
-```bash
+# vérifie la syntaxe sans rien lancer
 ansible-playbook playbook.yml --syntax-check
-```
 
-- Vérifie la syntaxe sans rien lancer.
-
-```bash
+# déploiement complet
 ansible-playbook playbook.yml --ask-vault-pass
-```
 
-- Déploiement complet.
-
-```bash
+# un seul rôle
 ansible-playbook playbook.yml --tags <TAG> --ask-vault-pass
-```
 
-- Déploie un seul rôle.
+# simulation, montre les différences
+ansible-playbook playbook.yml --check --diff --ask-vault-pass
 
-```bash
-ansible-playbook playbook.yml --check --diff
-```
+# mode très détaillé pour débugger
+ansible-playbook playbook.yml -vvv --ask-vault-pass
 
-- Simulation, montre les différences.
-
-```bash
-ansible-playbook playbook.yml -vvv
-```
-
-- Mode très détaillé pour débugger.
-
-```bash
+# liste les tâches sans les lancer
 ansible-playbook playbook.yml --list-tasks
-```
 
-- Liste les tâches sans les lancer.
+# force une variable (priorité maximale)
+ansible-playbook playbook.yml -e "<VAR>=<VALEUR>" --ask-vault-pass
 
-```bash
-ansible-playbook playbook.yml -e "<VAR>=<VALEUR>"
-```
-
-- Force une variable, priorité maximale.
-
-## Vault
-
-```bash
+# modifie les secrets (aussi : create, view, encrypt, decrypt, rekey)
 ansible-vault edit group_vars/<NOM_GROUPE>.yml
 ```
 
-- Modifie les secrets. Aussi : `create`, `view`, `encrypt`, `decrypt`, `rekey`.
-
-## Docker, sur le serveur
+## Docker (sur le serveur)
 
 ```bash
+# se placer dans le projet pour que compose trouve le .env
 cd <PROJECT_DIR>
-```
 
-- Se placer dans le projet pour que compose trouve le `.env`.
-
-```bash
+# état de tous les conteneurs
 docker compose ps
-```
 
-- État de tous les conteneurs.
-
-```bash
+# logs d'un service en direct
 docker compose logs -f <NOM_SERVICE>
-```
 
-- Logs d'un service en direct.
-
-```bash
+# ouvre un terminal dans le conteneur
 docker compose exec <NOM_SERVICE> sh
-```
 
-- Ouvre un terminal dans le conteneur.
-
-```bash
+# redémarre un service
 docker compose restart <NOM_SERVICE>
-```
 
-- Redémarre un service.
-
-```bash
+# recrée tous les conteneurs
 docker compose up -d --force-recreate
-```
 
-- Recrée tous les conteneurs.
-
-```bash
+# arrête tout, garde les données
 docker compose down
-```
 
-- Arrête tout, garde les données.
-
-```bash
+# arrête tout et SUPPRIME les données
 docker compose down -v
-```
 
-- Arrête tout et SUPPRIME les données.
-
-```bash
+# liste volumes / réseaux / images
 docker volume ls
+docker network ls
+docker image ls
 ```
-
-- Liste les volumes. Aussi : `docker network ls`, `docker image ls`.
 
 ## Vérifications serveur
 
 ```bash
+# pare-feu et ports ouverts
 sudo ufw status verbose
-```
 
-- Pare-feu et ports ouverts.
-
-```bash
+# RAM et swap
 free -h
-```
 
-- RAM et swap.
-
-```bash
+# ports en écoute et programmes associés
 sudo ss -tlnp
-```
 
-- Ports en écoute et programmes associés.
-
-```bash
+# teste le site en HTTPS
 curl -kI https://<IP_SERVEUR>/
-```
 
-- Teste le site en HTTPS.
-
-```bash
+# redémarre : tout doit revenir seul grâce à restart: always
 sudo reboot
 ```
-
-- Redémarre. Après, tout doit revenir tout seul grâce à `restart: always`.
 
 ## Lire le résultat d'un playbook
 
 - `ok` : déjà dans le bon état, rien à faire
-- `changed` : une modification a été appliquée
-- `skipping` : tâche sautée car la condition `when` est fausse
+- `changed` : modification appliquée
+- `skipping` : condition `when` fausse
 - `failed` : erreur
-- `unreachable` : connexion SSH impossible
-- Deuxième lancement d'un playbook bien fait : `changed=0`
+- `unreachable` : SSH impossible
+- 2e lancement d'un playbook bien fait : `changed=0`

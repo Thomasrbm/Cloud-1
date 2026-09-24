@@ -1,40 +1,41 @@
 # ansible.cfg
 
-## À quoi ça sert
-
-Fichier de réglages lu automatiquement quand tu lances `ansible-playbook` depuis ce dossier. Il évite de retaper les mêmes options à chaque commande.
-
-## Le fichier
+- Lu automatiquement quand tu lances `ansible-playbook` depuis ce dossier
+- Évite de retaper les mêmes options à chaque commande
 
 ```ini
+# section des réglages généraux
 [defaults]
+
+# inventaire utilisé par défaut (plus besoin de -i)
 inventory = inventory.ini
+
+# utilisateur SSH par défaut, écrasé par ansible_user dans l'inventaire
+# sur AWS Ubuntu : ubuntu
 remote_user = <SSH_USER>
+
+# clé privée par défaut, écrasée par ansible_ssh_private_key_file
+# sur AWS : le .pem de la key pair, en chmod 400
 private_key_file = <CHEMIN_CLE_PRIVEE>
+
+# ne demande pas de taper "yes" à la première connexion SSH (sinon le script bloque)
 host_key_checking = False
 
+# (facultatif) fichier contenant le mot de passe du vault -> plus besoin de --ask-vault-pass
+# ce fichier ne doit JAMAIS aller sur git
+# vault_password_file = <FICHIER_MDP_VAULT>
+
+# (facultatif) dossier où chercher les rôles
+# roles_path = ./roles
+
+# section des réglages SSH
 [ssh_connection]
+
+# envoie le code directement dans la session SSH au lieu de copier un fichier
+# 2 à 3x plus rapide (marche si sudo n'exige pas de tty, OK sur Ubuntu)
 pipelining = True
+
+# -C : compresse / ControlMaster : réutilise la même connexion
+# ControlPersist=300s : garde la connexion ouverte 5 min entre les tâches
 ssh_args = -C -o ControlMaster=auto -o ControlPersist=300s
 ```
-
-## Ligne par ligne
-
-- `[defaults]` : début de la section des réglages généraux
-- `inventory = inventory.ini` : fichier de serveurs utilisé par défaut, plus besoin de `-i`
-- `remote_user = <SSH_USER>` : utilisateur SSH par défaut. Écrasé par `ansible_user` dans l'inventaire. Sur AWS Ubuntu : `ubuntu`
-- `private_key_file = <CHEMIN_CLE_PRIVEE>` : clé privée par défaut. Sur AWS : le `.pem`, en `chmod 400`
-- `host_key_checking = False` : ne demande pas de taper "yes" à la première connexion SSH, sinon le script bloque
-- `[ssh_connection]` : début de la section des réglages SSH
-- `pipelining = True` : envoie le code directement dans la session SSH au lieu de copier un fichier. 2 à 3 fois plus rapide
-- `ssh_args = -C ...` : `-C` compresse, `ControlMaster=auto` réutilise la même connexion, `ControlPersist=300s` la garde ouverte 5 minutes
-
-## Options facultatives
-
-```ini
-vault_password_file = <FICHIER_MDP_VAULT>
-roles_path = ./roles
-```
-
-- `vault_password_file` : lit le mot de passe du vault dans un fichier, plus besoin de `--ask-vault-pass`. Ce fichier ne doit jamais aller sur git
-- `roles_path` : dossier où chercher les rôles

@@ -1,27 +1,26 @@
 # roles/stack/templates/env.j2
 
-## À quoi ça sert
-
-Génère `<PROJECT_DIR>/.env` sur le serveur. Docker compose le lit automatiquement : il y trouve la liste des fichiers compose et les mots de passe.
-
-## Le fichier
+- Génère `<PROJECT_DIR>/.env` sur le serveur
+- Docker compose le lit automatiquement : liste des fichiers compose + mots de passe
+- Déposé en `0600` (root seulement), jamais commité
 
 ```bash
+# Généré par Ansible depuis group_vars/<NOM_GROUPE>.yml (vault)
+
+# fichiers compose à fusionner, séparés par ":"
+# grâce à ça, un simple "docker compose ps" voit tous les services
 COMPOSE_FILE={{ compose_files | join(':') }}
+
+# mot de passe root de la base (vault)
 MYSQL_ROOT_PASSWORD={{ <DB>_root_password }}
+
+# nom de la base (vault)
 MYSQL_DATABASE={{ <DB>_database }}
+
+# utilisateur de la base et son mot de passe (vault)
 MYSQL_USER={{ <DB>_user }}
 MYSQL_PASSWORD={{ <DB>_password }}
 ```
-
-## Ligne par ligne
-
-- `COMPOSE_FILE=` : liste des fichiers compose à fusionner, séparés par `:`. Grâce à elle, un simple `docker compose ps` voit tous les services
-- `{{ compose_files | join(':') }}` : prend la liste de `group_vars/all.yml` et la colle avec `:`
-- `MYSQL_ROOT_PASSWORD=` : mot de passe root, vient du vault
-- `MYSQL_DATABASE=` : nom de la base, vient du vault
-- `MYSQL_USER=` : utilisateur de la base, vient du vault
-- `MYSQL_PASSWORD=` : mot de passe de cet utilisateur, vient du vault
 
 ## Résultat sur le serveur
 
@@ -32,9 +31,3 @@ MYSQL_DATABASE=<NOM_BASE>
 MYSQL_USER=<USER_DB>
 MYSQL_PASSWORD=<MDP_USER_DB>
 ```
-
-## À retenir
-
-- Déposé avec `mode: '0600'` : seul root peut le lire
-- Avec `notify: Recreate stack` : un conteneur ne relit le `.env` qu'à sa création
-- Ne jamais commit un `.env` réel

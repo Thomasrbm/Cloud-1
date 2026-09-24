@@ -1,67 +1,62 @@
 # roles/<NOM_ROLE>/templates/compose.<NOM_SERVICE>.yml.j2
 
-## À quoi ça sert
+- Un fichier par service
+- `{{ variable }}` : remplacée par Ansible au déploiement
+- `${VARIABLE}` : laissée par Ansible, remplacée par docker compose depuis le `.env`
 
-Un fichier par service. Les mots de passe sont écrits `${VARIABLE}` : docker compose les lit dans le `.env`, ils ne sont jamais écrits en dur.
-
-## Base de données (MySQL / MariaDB)
+## compose.db.yml.j2 (MySQL / MariaDB)
 
 ```yaml
 services:
+  # nom du service = son adresse sur le réseau docker (ex : mysql)
   <NOM_SERVICE_DB>:
+    # ex : mysql:8.0 ou mariadb:11
     image: <IMAGE_DB>:<TAG>
     restart: always
     environment:
+      # mot de passe root de la base
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # base créée au premier démarrage
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      # compte créé pour l'application
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
+      # dossier des données MySQL, sauvegardé dans le volume
       - <NOM_VOLUME_DB>:/var/lib/mysql
     networks:
       - <NOM_RESEAU>
+    # pas de "ports:" : jamais joignable depuis Internet, seulement sur le réseau docker (3306)
 ```
 
-- `<NOM_SERVICE_DB>` : nom du service, sert aussi d'adresse sur le réseau (ex : `mysql`)
-- `image:` : ex `mysql:8.0` ou `mariadb:11`
-- `MYSQL_ROOT_PASSWORD` : mot de passe root de la base
-- `MYSQL_DATABASE` : base créée au premier démarrage
-- `MYSQL_USER` / `MYSQL_PASSWORD` : compte créé pour l'application
-- `/var/lib/mysql` : dossier où MySQL range ses données, sauvegardé dans le volume
-- Pas de `ports:` : la base n'est jamais joignable depuis Internet, seulement sur le réseau docker
-
-## Application PHP-FPM (ex : WordPress)
+## compose.app.yml.j2 (application PHP-FPM + outil wp-cli)
 
 ```yaml
 services:
   <NOM_SERVICE_APP>:
+    # ex : wordpress:php8.1-fpm (PHP sans serveur web, nginx s'en charge)
     image: <IMAGE_APP>:<TAG>
     restart: always
+    # démarre la base avant l'application
     depends_on:
       - <NOM_SERVICE_DB>
     environment:
+      # adresse de la base = nom de son service
       WORDPRESS_DB_HOST: <NOM_SERVICE_DB>
+      # identifiants de la base, repris du .env
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
+      # fichiers du site, dans un volume pour survivre au reboot
       - <NOM_VOLUME_APP>:/var/www/html
     networks:
       - <NOM_RESEAU>
-```
 
-- `image:` : ex `wordpress:php8.1-fpm`, PHP sans serveur web (nginx s'en charge)
-- `depends_on:` : démarre la base avant l'application
-- `WORDPRESS_DB_HOST` : adresse de la base = nom de son service
-- `WORDPRESS_DB_NAME` / `_USER` / `_PASSWORD` : identifiants de la base, repris du `.env`
-- `/var/www/html` : fichiers du site, dans un volume pour survivre au reboot
-
-## Conteneur outil lancé à la demande (ex : wp-cli)
-
-```yaml
-services:
   <NOM_SERVICE_OUTIL>:
+    # ex : wordpress:cli
     image: <IMAGE_OUTIL>:<TAG>
+    # ne démarre PAS avec "docker compose up", seulement avec "--profile tools run"
     profiles:
       - tools
     depends_on:
@@ -73,75 +68,66 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
+      # même volume que l'appli : l'outil voit et modifie les mêmes fichiers
       - <NOM_VOLUME_APP>:/var/www/html
     networks:
       - <NOM_RESEAU>
+    # tourne en www-data (33), comme php-fpm, pour ne pas casser les droits
     user: "33:33"
 ```
 
-- `image:` : ex `wordpress:cli`
-- `profiles: [tools]` : ne démarre pas avec `docker compose up`, seulement avec `--profile tools run`
-- Même volume que l'application : l'outil voit et modifie les mêmes fichiers
-- `user: "33:33"` : tourne en `www-data`, le même utilisateur que php-fpm, pour ne pas casser les droits
-
-## Interface d'administration derrière le proxy (ex : phpMyAdmin)
+## compose.admin.yml.j2 (ex : phpMyAdmin derrière nginx)
 
 ```yaml
 services:
   <NOM_SERVICE_ADMIN>:
+    # ex : phpmyadmin:latest
     image: <IMAGE_ADMIN>:<TAG>
     restart: always
     depends_on:
       - <NOM_SERVICE_DB>
     environment:
+      # adresse et port de la base
       PMA_HOST: <NOM_SERVICE_DB>
       PMA_PORT: "3306"
+      # URL publique complète pour que les liens marchent sous /<CHEMIN_URL>/
+      # ajoute ":port" seulement si HTTPS n'est pas sur 443
       PMA_ABSOLUTE_URI: https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}/<CHEMIN_URL>/
     networks:
       - <NOM_RESEAU>
+    # pas de "ports:" : accessible uniquement via nginx
 ```
 
-- `image:` : ex `phpmyadmin:latest`
-- `PMA_HOST` : adresse de la base
-- `PMA_PORT` : port de la base
-- `PMA_ABSOLUTE_URI` : URL publique complète, pour que les liens marchent derrière nginx sous `/<CHEMIN_URL>/`
-- `{% if ... %}:{{ https_port }}{% endif %}` : ajoute le port dans l'URL seulement s'il n'est pas 443
-- Pas de `ports:` : accessible uniquement via nginx
-
-## Reverse proxy nginx (le seul exposé)
+## compose.proxy.yml.j2 (nginx, le seul exposé)
 
 ```yaml
 services:
   nginx:
+    # image nginx légère
     image: nginx:alpine
     restart: always
     depends_on:
       - <NOM_SERVICE_APP>
       - <NOM_SERVICE_ADMIN>
+    # le SEUL service qui publie des ports sur le serveur
     ports:
       - "{{ http_port }}:80"
       - "{{ https_port }}:443"
     volumes:
+      # config nginx générée par Ansible, à la place de la config par défaut (:ro = lecture seule)
       - {{ project_dir }}/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # certificats TLS
       - {{ project_dir }}/ssl:/etc/nginx/ssl:ro
+      # fichiers du site : nginx sert images et CSS sans passer par PHP
       - <NOM_VOLUME_APP>:/var/www/html
     networks:
       - <NOM_RESEAU>
 ```
 
-- `nginx:alpine` : image nginx légère
-- `ports:` : seul service qui publie des ports sur le serveur (80 et 443)
-- 1er volume : la config nginx générée par Ansible, montée à la place de la config par défaut
-- 2e volume : le dossier des certificats TLS
-- `:ro` : lecture seule, le conteneur ne peut pas les modifier
-- 3e volume : les fichiers du site, pour que nginx serve les images et le CSS sans passer par PHP
+## Syntaxe Jinja dans les .j2
 
-## Les deux types de variables dans un .j2
-
-- `{{ variable }}` : remplacée par Ansible au moment du déploiement
-- `${VARIABLE}` : laissée telle quelle par Ansible, remplacée par docker compose avec le `.env`
-- `{% if condition %} ... {% endif %}` : condition Jinja
-- `{% for x in liste %} ... {% endfor %}` : boucle Jinja
-- `{{ liste | join(':') }}` : filtre qui colle les éléments avec `:`
-- `{{ variable | default('x') }}` : valeur par défaut si la variable n'existe pas
+- `{% if condition %} ... {% endif %}` : condition
+- `{% for x in liste %} ... {% endfor %}` : boucle
+- `{{ liste | join(':') }}` : colle les éléments avec `:`
+- `{{ variable | default('x') }}` : valeur par défaut
 - `{# texte #}` : commentaire Jinja, absent du fichier final
