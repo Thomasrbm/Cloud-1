@@ -3,13 +3,26 @@
 # ==============================================================================
 # RÔLE WORDPRESS
 
-# Le runtime PHP (php-fpm) et l'installation du site par wp-cli.
-# Les -f incluent compose.db.yml : le service wordpress declare depends_on mysql,
-# et Compose refuse de demarrer si ce service manque dans le jeu de fichiers.
+# pour les languages interpreted (diff de compiled qui lit une fois et 
+# traduit)
+
+# interet run time (pas gestion memoire, portable)
+# pas memoire => interpreteur fait la gestion car il a les ressources
+# en live
+
+# en compile on sait pas a l avance donc on doit tout gerer
+
+# run time = programme qui lit ton code et execute (l interpreteur)
+# js = node js
+# python = python3
+
+
+# run time php = php fpm
+
 # ==============================================================================
 
 
-# Bloc 1 : copie le compose de WordPress
+# Bloc 1 : copie le compose de WordPress dans le dossier de travail
 - name: Deploy the WordPress compose file
   template:
     src: compose.wordpress.yml.j2
@@ -31,10 +44,12 @@
     or ('Recreated' in wp_up.stderr)
 
 
-# Bloc 3 : attendre que l'image WordPress ait fini de copier ses fichiers
-# Le volume étant nommé, on ne peut plus tester un chemin sur l'hôte : on
-# regarde DEPUIS le conteneur.
+# Bloc 3 : attendre que l'image WordPress ait fini de copier ses files
+# Car l image met du temps a copier mais compose passe a la suite
+# sans attendre, donc sans pause sa buggerais (pas de fichier sur leqauel travailler)
 - name: Wait for WordPress files to be extracted
+
+  # verifie si le fichier dont on a besoin  est la (version php)
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
     -f compose.wordpress.yml exec -T wordpress
@@ -42,7 +57,7 @@
   args:
     chdir: "{{ project_dir }}"
   register: wp_files
-  until: wp_files.rc == 0
+  until: wp_files.rc == 0 
   retries: 30
   delay: 5
   changed_when: false
@@ -55,23 +70,42 @@
   when: wp_files.rc != 0
 
 
+
+
+
+
+
 # ==============================================================================
 # INSTALLATION AUTOMATIQUE DE WORDPRESS (wp-cli)
-# Le sujet exige un site fonctionnel obtenu UNIQUEMENT par le script : sans ces
-# taches, chaque deploiement s'arrete sur le formulaire "Welcome" de WordPress,
-# qu'il faudrait remplir a la main.
-#
-# On ecrit `wpcli wp core ...` et pas `wpcli core ...` : l'entrypoint de l'image
-# ne rajoute `wp` que si le premier argument commence par un tiret, sinon il
-# cherche un binaire nomme `core`, qui n'existe pas.
+
+# install avec le cli
+
 # ==============================================================================
 
 
 # Bloc 4 : WordPress est-il deja installe ?
-# 'core is-installed' renvoie 0 si oui, 1 sinon. C'est ce test qui rend la
-# tache suivante idempotente : relancer le playbook ne reinstalle rien.
-# wp-cli parle a MySQL via PHP, il n'a besoin d'aucun binaire client.
+# 'core is-installed' renvoie 0 si oui, 1 sinon.
+
 - name: Check whether WordPress is already installed
+
+  #  profil est coller sur un service pour qu il ne start pas avec 
+  # le reste
+
+  # --profile check que via le profil docker (separe du compose up general)
+  #
+  # run = cree un container neuf (exec userai u ndeja existant)
+  # --rm  supprime des que la cmd a ete test dedans 
+  # -T = pas de terminal interactif
+  # wpcli = nom du service 
+  #
+  # wp = le programme
+  # core = categorie de cmd
+  #   demande si is isntalled
+
+  # docker check 3 fichier yaml (le general, db et wp)
+  #  prend les 3 fichier active le profil et cree un nouveau
+  # ainsi il est sur le meme reseau que la db, il voit les fichier de wp
+  # les id de la db avec le .env
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
     -f compose.wordpress.yml --profile tools run --rm -T wpcli wp core is-installed
@@ -83,6 +117,8 @@
 
 
 # Bloc 5 : installation (titre, compte admin) - seulement si necessaire
+
+# container temporaire aussi mais pour config le compte url etc dans les volume et db
 - name: Install WordPress
   command: >-
     docker compose -f docker-compose.yml -f compose.db.yml
@@ -95,9 +131,7 @@
     --skip-email
   args:
     chdir: "{{ project_dir }}"
-  when: wp_is_installed.rc != 0
+  when: wp_is_installed.rc != 0 # Se declahnce que si pas deja cree
   register: wp_install
   changed_when: wp_install.rc == 0
-  # Rien n'est affiche quand la tache reussit ; en cas d'echec Ansible montre
-  # la commande, mot de passe compris, ce qui est voulu ici pour pouvoir
-  # diagnostiquer. Le mot de passe reste par ailleurs dans le vault.
+  # Rien n'est affiche quand la tache reussit ;

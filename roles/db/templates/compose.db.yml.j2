@@ -1,5 +1,14 @@
+
+# fichier compose.db =  pas un seul docker-compose.yml
+# chaque service decrit son container
+
+# ===> relie tous ensemble par  le .env avec la ligne
+# COMPOSE_FILE={{ compose_files | join(':') }}  la cmd lit tout d un coup
+
+
 # La base de données. Déposé par le rôle db.
 # 1 process = 1 container. Secrets injectés via .env (jamais en dur).
+
 services:
   mysql:
     image: mysql:8.0
@@ -13,5 +22,6 @@ services:
       - mysql_data:/var/lib/mysql   # volume nommé : survit au reboot
     networks:
       - wp_network
+  
     # Pas de ports exposés : la base n'est jamais joignable depuis Internet,
     # seulement sur wp_network, en 3306.

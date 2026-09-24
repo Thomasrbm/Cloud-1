@@ -4,8 +4,8 @@
 # RÔLE REVERSE-PROXY (PROXY)
 
 # nginx et le TLS : le seul composant exposé sur Internet (80 et 443).
-# C'est aussi le dernier rôle du playbook, donc c'est lui qui fait la passe
-# finale sur toute la stack.
+# seul truc exposer sur les port, cest lui qui filtre et choisit si t as acces et comment
+
 # ==============================================================================
 
 
@@ -20,9 +20,12 @@
     - "{{ project_dir }}/ssl"     # certificats
 
 
+
+
 # Bloc 2 : Génération auto certif TLS (HTTPS)
 - name: Generate self-signed SSL certificate
   # > : colle tout et add un \n
+  # - sans \n 
   command: >
     openssl req -x509 -nodes -days 365 -newkey rsa:2048
     -keyout {{ project_dir }}/ssl/key.pem
@@ -32,13 +35,19 @@
     creates: "{{ project_dir }}/ssl/cert.pem" # si existe deja, refait pas la commande
 
 
-# Bloc 3 : ngninx
+
+
+
+# Bloc 3 : copie la conf nginx
 - name: Deploy nginx config
-  template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
-    src: nginx.conf.j2                     # Le fichier modèle sur ton ordinateur personnel
-    dest: "{{ project_dir }}/nginx/nginx.conf" # La destination sur le serveur distant
+  template:
+    src: nginx.conf.j2                     
+    dest: "{{ project_dir }}/nginx/nginx.conf"
     mode: '0644'
-  notify: Restart nginx # Si la config change, Ansible appellera un "handler" pour relancer nginx
+  notify: Restart nginx # appele le handle si changement (pdt le playbook)
+# template compare le fichier et envoi notif que si modif
+
+
 
 
 # Bloc 4 : copie le compose du proxy
@@ -47,6 +56,8 @@
     src: compose.proxy.yml.j2
     dest: "{{ project_dir }}/compose.proxy.yml"
     mode: '0644'
+
+
 
 
 # Bloc 5 : lance ou maj le docker nginx
@@ -60,10 +71,11 @@
     or ('Recreated' in nginx_up.stderr)
 
 
+
+
+
 # Bloc 6 : passe finale sur toute la stack
-# Une commande nue : elle lit COMPOSE_FILE dans le .env, donc elle voit les 4
-# services d'un coup. Ça vérifie qu'ils correspondent bien aux fichiers compose
-# et ça vire les conteneurs orphelins.
+# lance tout si certins pas deja lance
 - name: Converge the whole stack
   command: docker compose up -d --remove-orphans
   args:

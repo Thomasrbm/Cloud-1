@@ -6,10 +6,12 @@
   apt:
     name: ufw
     state: present
+    # equivalent d un apt update (maj le catalogue local de apt dispo en ligne)
     update_cache: true
 
 # Bloc 2 : Règle de sécurité pour co entrantes
 - name: Default deny incoming
+  # install en meme temps que ansible , fourre tout maintain par la commu (y a npm yarn etc.)
   community.general.ufw: # Module Ansible spécifique pour configurer UFW
     direction: incoming  # Cible tout ce qui tente d'entrer
     policy: deny         # On ferme TOUT par défaut

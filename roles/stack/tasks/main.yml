@@ -10,7 +10,7 @@
 
 # Bloc 1 : arborescence
 - name: Create project directory
-  file: # Module 'file' pour créer des structures de dossiers
+  file:
     path: "{{ project_dir }}"   # project_dir defini dans groups_var, all.yaml
     state: directory            # On demande la création d'un dossier
     mode: '0755'                # Permissions standard (root modifie, les autres lisent et entrent)
@@ -20,11 +20,12 @@
 # Il doit exister AVANT le premier docker compose : c'est lui qui donne les mots
 # de passe et la liste des fichiers compose à fusionner.
 - name: Deploy .env file (secrets)
+  # va chercher dans le template du  /stack
   template:
     src: env.j2
     dest: "{{ project_dir }}/.env"
     mode: '0600' # perm admin only
-  notify: Recreate stack
+  notify: Recreate stack  # se declahcne quand sont cree ou modif :  /opt/wordpress/.env et /opt/wordpress/docker-compose.yml
 
 
 # Bloc 3 : copie le compose de base

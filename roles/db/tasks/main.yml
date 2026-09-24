@@ -11,50 +11,56 @@
 # Bloc 1 : copie le compose de la base
 - name: Deploy the database compose file
   template:
-    src: compose.db.yml.j2
+    src: compose.db.yml.j2 # prend le j1 le met au bon endroit pour la cmd docker compose up
     dest: "{{ project_dir }}/compose.db.yml"
     mode: '0644'
 
 
 # Bloc 2 : lance ou maj le docker mysql
-# Les -f sont explicites : ce rôle ne touche qu'au socle et à son composant.
 - name: Start the database
   command: docker compose -f docker-compose.yml -f compose.db.yml up -d mysql
   args:
     chdir: "{{ project_dir }}"
   register: db_up # Enregistre le texte de réponse du terminal dans une variable nommée 'db_up'
 
-    # IDEMPOTENCE : Ansible considère par défaut qu'une tâche 'command' modifie TOUJOURS le serveur.
 
-    # Grâce à cette condition, Ansible dira "changed" (modifié) uniquement si Docker a réellement créé,
-    # démarré ou recréé le conteneur.
-
-    #Si tout tourne déjà parfaitement, il affichera juste "ok" (aucun changement).
-  changed_when: >
+    # IDEMPOTENCE : par defaut ansible considere que command applique un CHANGED
+    # Grâce à cette condition, Ansible dira "changed" que si Docker  
+    # a creee, démarré ou recréé le conteneur.
+    
+    # Si tout tourne déjà parfaitement, il affichera juste "ok" (aucun changement).
+    # lit la sortie erreur de db 
+  changed_when: > # plusieurs ligne en une
     ('Started' in db_up.stderr) or ('Created' in db_up.stderr)
     or ('Recreated' in db_up.stderr)
 
 
+
+
+
+
 # Bloc 3 : attendre que MySQL accepte les connexions
-# MySQL met 10 a 30 s a s'initialiser au tout premier demarrage (creation de la
-# base et des comptes). On interroge le serveur avec mysqladmin, fourni par
-# l'image mysql elle-meme. Le mot de passe est lu DANS le conteneur depuis sa
-# variable d'environnement : il n'apparait jamais dans la ligne de commande.
+
+# MySQL met 10 a 30s a s'init (cree db, comptes etc)
+# On interroge le srv avec mysqladmin, fourni par image mysql
+
+# ping la db (besoin du mdp) until ping renvoit vrai (tant que false)
 - name: Wait for MySQL to accept connections
   shell: >-
     docker compose -f docker-compose.yml -f compose.db.yml exec -T mysql
     sh -c 'mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent'
   args:
     chdir: "{{ project_dir }}"
-  register: mysql_ping
-  until: mysql_ping.rc == 0   # on retente tant que ça ne répond pas
+  register: mysql_ping # recupere le retour
+  until: mysql_ping.rc == 0   # rc = return code. si 0 = success
   retries: 30
   delay: 5
-  changed_when: false
-  failed_when: false
+  changed_when: false # n affiche jamais changed (car aucune modif ici)
+  failed_when: false # (pareil)
 
 
+# configure le vrai fail
 - name: Fail with a clear message if MySQL never came up
   fail:
     msg: "MySQL n'a pas repondu en 150 s. Verifier : docker compose -f {{ project_dir }}/docker-compose.yml logs mysql"
-  when: mysql_ping.rc != 0
+  when: mysql_ping.rc != 0 # si dernier return code a echoue

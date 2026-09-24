@@ -1,4 +1,3 @@
-# L'administration de la base. Déposé par le rôle phpmyadmin.
 services:
   phpmyadmin:
     image: phpmyadmin:latest
@@ -6,10 +5,26 @@ services:
     depends_on:
       - mysql
     environment:
+    # php my admin adresse de la db et port qu il doit watch
       PMA_HOST: mysql
       PMA_PORT: "3306"
-      # Sert phpMyAdmin correctement derrière nginx sur le sous-chemin /phpmyadmin/.
+      # pour que nginx serv phpMyAdmin correctement ===>  /phpmyadmin/.
+      # ansible host = ip du server
+
+      # https_port ajoute le port si on est pas en 443
+      # ==> car par defaut fait / phpMyAdmin direct ca infere 443
+      # si on a setup autre chose sur le server ca add le port
+
+      # par exemple si on a deja un server qui use 443 alors on 
+      # doit use un autre port
+
+      # - port 443 → https://1.2.3.4/phpmyadmin/
+      # - port 8443 → https://1.2.3.4:8443/phpmyadmin/
+
+      #  le endif met fin au if
       PMA_ABSOLUTE_URI: https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}/phpmyadmin/
     networks:
       - wp_network
     # Accessible uniquement via le reverse-proxy nginx (pas de port hôte).
+    # on lui donne pas de port, il passe par le wp-network 
+    

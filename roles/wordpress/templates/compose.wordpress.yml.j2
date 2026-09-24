@@ -14,14 +14,13 @@ services:
       - wp_data:/var/www/html   # volume nommé : le site survit au reboot
     networks:
       - wp_network
-    # Variante -fpm : PHP tout seul, sans serveur web. C'est nginx qui écoute
-    # sur 80/443 et lui passe le PHP en interne, sur 9000.
 
-  # Outil en ligne de commande WordPress. 'profiles' l'empeche de demarrer avec
-  # la stack : il n'est lance qu'a la demande, par 'docker compose run wpcli ...'
-  # (conteneur ephemere, supprime des la commande terminee).
+
   wpcli:
     image: wordpress:cli
+  
+    # profile pour pas qu il se lance avec le   docker compose up -d 
+    # se declachne que dans la main si Check whether WordPress  fail
     profiles:
       - tools
     depends_on:
@@ -33,9 +32,9 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      # Meme volume que WordPress : wp-cli agit sur les memes fichiers.
       - wp_data:/var/www/html
     networks:
       - wp_network
-    # UID/GID de www-data : les fichiers crees restent lisibles par php-fpm.
-    user: "33:33"
+      # user 33 = user par defaut de php-fpm. car wp cli tourne pas en reboot
+      # donc besoin dun user , fait tourner le cli en tant que php fpm
+    user: "33:33" 
