@@ -13,13 +13,21 @@
 - name: Configure a swap file
   when:
     - swap_enabled | bool
-    # une machine qui a deja du swap (VPS classique) n'a rien a faire ici
+  
+    # var que ansible definie tout seul (au moment de gathering facts)
+    # comme (ansible distribution etc.)
+    # dit la taille deja presente du swap sur la machine
+
+    #  | int  = filtra jinja qui converti en int pour la cmp
+    # si 0 seulement alors le main s exec
     - ansible_swaptotal_mb | int == 0
   block:
 
     # Bloc 1 : réserver la place
     # fallocate prend la place d'un coup, contrairement a dd qui ecrit les
     # octets un par un. creates: -> si le fichier est la, Ansible saute.
+
+    # M pour Mo
     - name: Allocate the swap file
       command: "fallocate -l {{ swap_size_mb }}M {{ swap_file }}"
       args:
