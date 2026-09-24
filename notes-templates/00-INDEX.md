@@ -41,3 +41,14 @@
 - `19-teardown.yml.md`
 - `20-gitignore-et-cles-ssh.md`
 - `21-commandes.md`
+
+## Sans Docker (services directement sur le serveur)
+
+- `22-projet-sans-templates.md` (copy content + restart sans handlers)
+- `23-systemd-service.md`
+- `24-secret-envfile-no_log.md`
+- `25-vault-variable-et-fichier-mdp.md`
+- `26-backend-api-squelette.md`
+- `27-frontend-html-fetch.md`
+- `28-nginx-sur-l-hote.md`
+- `29-verifications-deploiement.md`
