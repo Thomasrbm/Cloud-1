@@ -1,11 +1,21 @@
 ---
-# est appelé si changement dans certaines config
+# juste appele a la cmd playbook
 
+# si env refait on relit tout l env donc on destroy tout les docker
+# pareillement si on a refait le docker on les refait tous pour maj
+# cas ou env a changed 
+
+
+# c est trigger par les notif de .env ou de docker composer yml dans le task
 - name: Recreate stack
-  # --force-recreate car les variables d'env sont figées au lancement du
+  # un conainer lit l env une seule fois meme si il a changer
+  # --force-recreate force a refaire pour avoir var actualised
+
   # conteneur : un simple up -d ne relirait pas le nouveau .env.
+  
   # --remove-orphans suppr les anciens docker zombie
   command: docker compose up -d --force-recreate --remove-orphans
-  args:
+  # la cnd au dessus sera exec la ou le chdir dit
+  args: # donnne des options au module
   # se met dans l'endroit ou il y a le docker compose pour pouvoir le lancer
     chdir: "{{ project_dir }}"

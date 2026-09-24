@@ -1,19 +1,34 @@
 
+# selon la requete nginx utilise le bloc server qui correspond
+# a la requete
+
+# il choisit d apres le port  (un bloc peut listen plusieurs ports)
+# plusieur bock peuvent listen le meme port 
+
+
+
+# il recoit les port depuis le compose ou il redirige des port pc vers 
+# port docker 
+
 
 # HTTP -> redirection HTTPS
 server {
-    listen 80 default_server;
-    server_name _;
-    return 301 https://$host{% if https_port | int != 443 %}:{{ https_port }}{% endif %}$request_uri;
+    listen 80 default_server;   # écoute les visiteurs qui arrivent en HTTP (port 80)
+    server_name _;              # quel que soit le nom de domaine demandé
+    
+    # 301 = redirection definitive
+    # force le https 
+    # host = ip server
+    # port sir pas 443
+    # request uri = le chemin / sur le srv 
+    return 301 https://$host{% if https_port | int != 443 %}:{{ https_port }}{% endif %}$request_uri;   
 }
 
 
 
-# Serveur HTTPS par défaut : WordPress à la racine, phpMyAdmin sur /phpmyadmin/.
-# Accessible directement par l'IP du serveur (aucun domaine requis).
 server {
-    listen 443 ssl default_server;
-    server_name _;
+    listen 443 ssl default_server; # chiffre ce port + est par defaut si aucun autre block server repond 
+    server_name _; # pas de nom precis + tout les port , donc repon tant que ip
 
     ssl_certificate     /etc/nginx/ssl/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/key.pem;
@@ -26,11 +41,7 @@ server {
 
 
     # A DECOMMENTER 
-
-    #   ansible-playbook playbook.yml --tags proxy --ask-vault-pass
-    # La page https://<IP>/preuve apparait en 15 s. Elle montre la chaine
-    # complete : ce template -> Ansible -> /opt/wordpress/nginx/nginx.conf ->
-    # le conteneur nginx -> le navigateur. Rien d'autre n'est touche.
+   
     # location = /preuve {
     #     default_type text/html;
     #     return 200 '<h1>Deploye par Ansible</h1><p>Thomas - Cloud-1</p>';
@@ -41,20 +52,27 @@ server {
 
 
 
-    # phpMyAdmin
+    # permet d attraper  /phpmyadmin  meme sans le / final pour le rajouter
     location = /phpmyadmin {
         return 301 /phpmyadmin/;
     }
+
+
+    #  ^~  = pour tout ce qui commence par ...
     location ^~ /phpmyadmin/ {
-        proxy_pass http://phpmyadmin:80/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://phpmyadmin:80/; #  comme ils sont sur 
+        # meme reseau docker wp_network juste avec le nom il redirige
+        # vers le bon container
+        proxy_set_header Host $host; # ip de la requete du nav
+        proxy_set_header X-Real-IP $remote_addr; # ip du mec qui demande   
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; #    si plusieurs intermediare ont les recencent tous 
+        proxy_set_header X-Forwarded-Proto $scheme; #  https 
     }
 
 
 
+    # pour tous les truc qui sont pas php myadmin
+    # il check la requete demande sinon il renvoit vers wordpress
 
     # WordPress
     location / {
@@ -63,14 +81,20 @@ server {
 
 
 
+    # block qui exec le php de wordpress
+    # regex pour toute url qui fini en php
+
     location ~ \.php$ {
-        fastcgi_pass wordpress:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
+        fastcgi_pass wordpress:9000; # envoit a php fpm dans le conteneur
+                        # nom du container et port par defaut de fpm
+        
+        fastcgi_index index.php; # si fini par / sans rien => exec index
+    
+        include fastcgi_params; # charge le fichier avec la requete
+        #  GET POST ETC 
+
+        # chemin du fichier a execute 
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        # nginx termine le TLS et parle en clair a php-fpm : sans ce parametre
-        # WordPress se croit en HTTP alors que son URL est en HTTPS, ce qui
-        # provoque une boucle de redirection dans /wp-admin.
-        fastcgi_param HTTPS on;
+        fastcgi_param HTTPS on; # dit que en https sinon ca redirect en boucle
     }
 }
