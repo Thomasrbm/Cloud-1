@@ -171,6 +171,8 @@ Running the playbook twice changes nothing the second time — `PLAY RECAP … c
 - **Docker data**: `/var/lib/docker` is `drwx--x---`, root only; `.env` is `0600`.
 - **One key per machine**: laptop, desktop and school workstation each add their own public key — revoking one never means rotating all.
 
+> **About the credentials in the commit history.** Earlier versions of `txt/acces.txt` list the WordPress and MySQL passwords in clear text, next to the server's IP. This is deliberate and limited to the school exercise: they were written out so the evaluators could log in and check each point during the defense. They belonged to a **throwaway test server that has since been shut down**, so none of them grants access to anything. We know this is not good practice — outside an evaluation, secrets only live in Ansible Vault, as the rest of this project does.
+
 ---
 
 ## Teardown

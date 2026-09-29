@@ -1,3 +1,10 @@
+NOTE : les versions precedentes de ce fichier (historique git) donnent les mots
+de passe en clair. C'est voulu, pour la soutenance : les correcteurs devaient
+pouvoir se connecter et verifier chaque point. Le serveur etait une instance de
+test, eteinte depuis ; ces mots de passe n'ouvrent plus rien. Nous savons que ce
+n'est pas une bonne pratique : hors exercice, les secrets restent dans le vault.
+
+
 LES 3 PAGES A OUVRIR DANS LE NAVIGATEUR
 
 
