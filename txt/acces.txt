@@ -8,15 +8,15 @@ WordPress
 Administration WordPress
 => https://13.60.218.238/wp-admin
    user : thomas
-   mdp  : ZFVfIinA35riVnFHFYJLthJ0
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
 
 phpMyAdmin
 => https://13.60.218.238/phpmyadmin/
    user : wp_user
-   mdp  : b5B2g5OSnzWg9V7QBWnyDiZH
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
    ---
    user : root
-   mdp  : 2t4CesixwPXrnRJAOWz4SMiz
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
 
 
 Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
