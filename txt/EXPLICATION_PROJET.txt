@@ -46,7 +46,7 @@ AUTRES FICHIERS
     txt/CONTAINERS.txt    volumes, images, orchestration : les reponses de la grille
     txt/exec_playbook.txt comment lire un run du playbook
     txt/vault.txt         le chemin des secrets
-  AWS.md          creation et configuration de l'instance EC2
+    txt/AWS.md            creation et configuration de l'instance EC2
 
   Desinstallation totale pour rejouer la demo :
     ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true
