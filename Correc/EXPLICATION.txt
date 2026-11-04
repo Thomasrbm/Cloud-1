@@ -1,9 +1,99 @@
 
 
 
+
+https://eu-north-1.signin.aws.amazon.com/oauth?client_id=arn%3Aaws%3Asignin%3A%3A%3Aconsole%2Fcanvas&code_challenge=CUmpdIL0w9d4qXWB9hpo0a4Fn6fIGTF3qGcCBGCBVe4&code_challenge_method=SHA-256&response_type=code&redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome%3Fca-oauth-flow-id%3D52fb%26hashArgs%3D%2523%26isauthcode%3Dtrue%26nc2%3Dh_si%26oauthStart%3D1793779701173%26src%3Dheader-signin%26state%3DhashArgsFromTB_eu-north-1_e5941135cd0adb83
+
+
+=> change to new experience 
+
+
+EC2
+
+a gauche ; instances => cocher cloud 1 => etat de l instance => demarrer 
+l instance
+
+
+
+ssh -i ~/.ssh/id_ed25519 ubuntu@13.60.244.93
+
+
+===> verifier que l ip du inventory.ini est toujours bonne 
+
+
+
+
+configurer les ip autoriser sur le EC2 => 
+cliquer sur l id en bleu :  dans securite en bas cliauqe sur l id du groupe de 
+securite  => sg-...
+
+
+Modifier regles entrantes => 0.0.0.0/0
+
+
+===============
+
+sudo docker ps sur le ubuntu  EC2
+
+
+
+
+DEFAIRE : 
+ansible-playbook teardown.yml --ask-vault-pass
+
+(docker reste isntalled)
+
+
+
+DEFAIRE TOUT : 
+ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true
+
+
+
+DEPLOY :
+ansible-playbook playbook.yml --ask-vault-pass
+
+
+
+
+
+Observer le ssh sur le EC2 : 
+
+sudo journalctl -u ssh -f
+sudo journalctl -f | grep -i sudo
+
+
+sudo docker ps 
+
+
+
+Le vault password :  voir mdp-secrets.txt sur le bureau
+
+
+
+
+
+
+===============
+
+
+
+
+
+le site : https://13.60.244.93/     (voir si ip a changed ec2)
+
+
+
+
+
+
+
 1/  port 80 et 443  +  databse juste acc sur les ports necessaire ? 
 
-nmap -Pn 13.60.218.238
+nmap -Pn 13.60.244.93
+(IP PEUT CHANGER)
+
+
 Vu de l'extérieur, seuls 22/80/443 sont ouverts 
 et 3306 absents.
 
@@ -19,10 +109,45 @@ et pour l'accès root exigé
 
 
 
+- ports db : (sur le EC2)
+
+sudo ss -tlnp | grep 3306   
+==> rien normal :  EC2 ouvre pas le 3306
+
+
+sudo docker ps --format "{{.Names}}\t{{.Ports}}" 
+=> ecoute a l interieur du reseau docker
+
+
+nc -zv -w5 13.60.244.93 3306
+=> rien
+nc -zv -w5 13.60.244.93 443 
+=> fonctionne 
+
+
+
+mais ca : 
+sudo docker exec wordpress-wordpress-1 sh -c 'php -r "var_dump(@fsockopen(\"mysql\", 3306));"'
+=> fonctionne
+
+exec ligne php  => ouvre connexion tcp en 3306 sur le docker mysql
+
+
 
 
 
 ==============================
+
+
+
+
+Infrastructure as code : 
+
+
+idempotency :  voir definition .txt
+
+
+
 
 
 
@@ -72,7 +197,7 @@ ansible-playbook playbook.yml --tags phpmyadmin --ask-vault-pass
 
 
 
- sudo grep -rn "password" --include='*.yml' --include='*.j2' --include='*.cfg' . | grep -v vault 
+sudo grep -rn "password" --include='*.yml' --include='*.j2' --include='*.cfg' . | grep -v vault 
 
 
 montrer le crypted => 
@@ -147,7 +272,7 @@ ansible server1 -b --ask-vault-pass -a "docker network inspect wordpress_wp_netw
 
 
 
-3.2/ data stored ans volume mouted ?  on peut voir en admin ? 
+3.2/ data stored dans volume mouted ?  on peut voir en admin ? 
 
 
 

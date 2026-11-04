@@ -1,0 +1,35 @@
+
+Infrastructure as code :  Faire une "recette" de son infrasctructure
+dans des fichiers declaratif style yaml.
+
+- decrire le reseau
+- le compute
+- decrire un etat desired
+
+
+=> reproductible 
+
+
+
+
+idempotency : si l etat est deja bon il va rien faire 
+
+
+
+
+
+Les steps de provision :  provision = partir machine vide et avoir les 
+services qui tournent à la fin. 
+
+0. avoir la machine (ec2 etc) accessible en ssh
+1. config (invotory pour cible), .cfg pour dire où sont les fichiers
+group_vars : les var d'env, 
+
+2. connexion avec cmd de playbook
+3. les roles qui deploie les services au fur et à mesure
+
+
+reboot et revient tout seul
+
+
+

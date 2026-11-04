@@ -1,0 +1,48 @@
+
+pour avoir plus : -v  ou -vv -vvv 
+
+
+ansible-playbook playbook.yml --ask-vault-pass -vvv 2>&1 | tee run.log
+grep -nE 'fatal:|FAILED!|ERROR!|UNREACHABLE!|failed=[1-9]|unreachable=[1-9]' run.log
+
+
+===> pas de pb ici donc pour voir use : 
+
+
+ANSIBLE_FORCE_COLOR=1 ansible-playbook Correc/error.yml --ask-vault-pass -v 2>&1 | tee error.log
+
+less -R error.log
+
+
+
+
+
+
+==================
+
+
+
+escalation succeded = » veut dire qu'Ansible a réussi à passer root avec sudo pour exécuter la tâche.
+
+
+
+
+skipping : la tâche n'a pas tourné, parce que sa condition
+             when: est fausse
+
+
+ok :  la tâche a tourné et l'état était déjà bon, donc rien n'a été modifié
+
+
+changed : la tâche a tourné et a modifié quelque chose sur 
+le serveur ça  éclenche les handlers (notify:)
+
+
+
+failed:  la tâche a échoué et le play s'arrête pour ce serveur
+
+
+unreachable :  Ansible n'a pas pu se connecter en SSH
+
+
+rescued :  la tâche a échoué, mais un bloc rescue: a rattrapé l'erreur

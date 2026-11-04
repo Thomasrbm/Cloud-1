@@ -1,0 +1,52 @@
+---
+# Playbook de demo : provoque des erreurs EXPRES pour voir a quoi elles
+# ressemblent (rouge, fatal, stderr, rc...). Ne touche a rien sur le serveur.
+#
+#   ansible-playbook Correc/error.yml --ask-vault-pass
+#   ansible-playbook Correc/error.yml --ask-vault-pass -v 2>&1 | tee error.log
+#   grep -nE 'fatal:|FAILED!|failed=[1-9]' error.log
+#
+# ignore_errors: true sur les premieres taches -> Ansible affiche l'erreur en
+# rouge puis "...ignoring" et continue, pour voir plusieurs cas d'un coup.
+# La derniere tache n'a pas ignore_errors -> elle arrete vraiment le play.
+
+- name: Demo des erreurs Ansible
+  hosts: webservers
+  become: true
+  gather_facts: false
+
+  tasks:
+    # 1. Commande qui renvoie un code != 0 -> rc, stderr dans le message
+    - name: "1. Commande qui echoue (fichier introuvable)"
+      command: ls /ce/dossier/nexiste/pas
+      ignore_errors: true
+
+    # 2. Meme principe, imitation du cas MySQL pas encore pret
+    - name: "2. Connexion MySQL vers un port ou rien n'ecoute"
+      shell: "timeout 3 bash -c 'echo > /dev/tcp/127.0.0.1/3399'"
+      ignore_errors: true
+
+    # 3. retries qui n'aboutit jamais -> FAILED - RETRYING x3, puis rouge
+    - name: "3. Attente qui n'aboutit jamais (3 essais)"
+      command: test -f /tmp/fichier-qui-narrivera-jamais
+      register: attente
+      until: attente.rc == 0
+      retries: 3
+      delay: 2
+      ignore_errors: true
+
+    # 4. Module mal utilise -> erreur d'Ansible lui-meme (pas du serveur)
+    - name: "4. Paquet qui n'existe pas"
+      apt:
+        name: paquet-totalement-invente-42
+        state: present
+      ignore_errors: true
+
+    # 5. Echec reel : arrete le play, failed=1 dans le PLAY RECAP
+    - name: "5. Echec volontaire avec un message clair"
+      fail:
+        msg: "Ceci est une erreur volontaire : le play s'arrete ici."
+
+    - name: "6. Jamais executee (le play s'est arrete avant)"
+      debug:
+        msg: "tu ne verras pas ce message"
