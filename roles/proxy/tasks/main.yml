@@ -1,0 +1,86 @@
+---
+
+# ==============================================================================
+# RÔLE REVERSE-PROXY (PROXY)
+
+# nginx et le TLS : le seul composant exposé sur Internet (80 et 443).
+# seul truc exposer sur les port, cest lui qui filtre et choisit si t as acces et comment
+
+# ==============================================================================
+
+
+# Bloc 1 : arborescence
+- name: Create nginx and ssl directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ project_dir }}/nginx"
+    - "{{ project_dir }}/ssl"     # certificats
+
+
+
+
+# Bloc 2 : Génération auto certif TLS (HTTPS)
+- name: Generate self-signed SSL certificate
+  # > : colle tout et add un \n
+  # - sans \n 
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout {{ project_dir }}/ssl/key.pem
+    -out {{ project_dir }}/ssl/cert.pem
+    -subj "/C=FR/ST=LeHavre/L=LeHavre/O=42/CN={{ domain_name }}"
+  args:  # control en + sur une cmd
+    creates: "{{ project_dir }}/ssl/cert.pem" # si existe deja, refait pas la commande
+
+
+
+
+
+# Bloc 3 : copie la conf nginx
+- name: Deploy nginx config
+  template:
+    src: nginx.conf.j2                     
+    dest: "{{ project_dir }}/nginx/nginx.conf"
+    mode: '0644'
+  notify: Restart nginx # appele le handle si changement (pdt le playbook)
+# template compare le fichier et envoi notif que si modif
+
+
+
+
+# Bloc 4 : copie le compose du proxy
+- name: Deploy the proxy compose file
+  template:
+    src: compose.proxy.yml.j2
+    dest: "{{ project_dir }}/compose.proxy.yml"
+    mode: '0644'
+
+
+
+
+# Bloc 5 : lance ou maj le docker nginx
+- name: Start nginx
+  command: docker compose up -d nginx
+  args:
+    chdir: "{{ project_dir }}"
+  register: nginx_up
+  changed_when: >
+    ('Started' in nginx_up.stderr) or ('Created' in nginx_up.stderr)
+    or ('Recreated' in nginx_up.stderr)
+
+
+
+
+
+# Bloc 6 : passe finale sur toute la stack
+# lance tout si certins pas deja lance
+- name: Converge the whole stack
+  command: docker compose up -d --remove-orphans
+  args:
+    chdir: "{{ project_dir }}"
+  register: stack_up
+  changed_when: >
+    ('Started' in stack_up.stderr) or ('Created' in stack_up.stderr)
+    or ('Recreated' in stack_up.stderr)

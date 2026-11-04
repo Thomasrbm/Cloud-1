@@ -1,0 +1,30 @@
+NOTE : les versions precedentes de ce fichier (historique git) donnent les mots
+de passe en clair. C'est voulu, pour la soutenance : les correcteurs devaient
+pouvoir se connecter et verifier chaque point. Le serveur etait une instance de
+test, eteinte depuis ; ces mots de passe n'ouvrent plus rien. Nous savons que ce
+n'est pas une bonne pratique : hors exercice, les secrets restent dans le vault.
+
+
+LES 3 PAGES A OUVRIR DANS LE NAVIGATEUR
+
+
+WordPress
+=> https://13.60.218.238/
+   pas de login, c'est le site public
+
+Administration WordPress
+=> https://13.60.218.238/wp-admin
+   user : thomas
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
+
+phpMyAdmin
+=> https://13.60.218.238/phpmyadmin/
+   user : wp_user
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
+   ---
+   user : root
+   mdp  : (dans le vault : ansible-vault view group_vars/webservers.yml)
+
+
+Le navigateur affiche "Connexion non securisee" : certificat auto-signe.
+Avance -> Continuer.

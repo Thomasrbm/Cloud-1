@@ -1,0 +1,26 @@
+LES SECRETS
+
+  Fichier : group_vars/webservers.yml   (chiffre par ansible-vault, dans git)
+
+  Pourquoi dans git : c'est tout l'interet du vault. Le depot est autonome,
+  `git clone` + le mot de passe du vault suffisent a deployer depuis n'importe
+  quelle machine. Le sujet interdit les identifiants EN CLAIR dans le depot :
+  un blob AES-256 n'est pas en clair. Ce qui reste hors git : le mot de passe
+  du vault, jamais ecrit nulle part dans le projet.
+  Contenu : 3 mots de passe MySQL + le mot de passe admin WordPress
+
+  Chemin : group_vars (chiffre) --> env.j2 --> /opt/wordpress/.env (0600) --> conteneurs
+    {{ mysql_password }}  = Ansible, sur ma machine, au deploiement
+    ${MYSQL_PASSWORD}     = Docker, sur le serveur, au lancement
+  Aucun secret en clair dans le depot : les .j2 ne contiennent que des variables.
+
+  On ecrit les valeurs en clair, puis on chiffre le fichier sur place :
+    ansible-vault encrypt group_vars/webservers.yml
+    head -1 group_vars/webservers.yml     -> $ANSIBLE_VAULT;1.1;AES256
+
+  AES-256, cle derivee du mot de passe par PBKDF2. Mot de passe perdu = fichier perdu.
+  --ask-vault-pass dechiffre en memoire vive ; le fichier reste chiffre sur le disque.
+
+    ansible-vault view group_vars/webservers.yml    # lire
+    ansible-vault edit group_vars/webservers.yml    # modifier
+    ansible-vault rekey group_vars/webservers.yml   # changer le mot de passe

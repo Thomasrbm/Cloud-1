@@ -1,0 +1,42 @@
+Depuis ~/Cloud-1.
+
+LANCER
+  ansible-playbook playbook.yml --ask-vault-pass
+
+  # puis dans le navigateur :
+  # https://13.60.218.238/             WordPress
+  # https://13.60.218.238/phpmyadmin/  phpMyAdmin
+
+DEPLOYER UNE PARTIE SEULEMENT (roles : stack, db, wordpress, phpmyadmin, proxy)
+  ansible-playbook playbook.yml --tags db --ask-vault-pass
+  ansible-playbook playbook.yml --tags proxy --ask-vault-pass
+
+VERIFIER (depuis ma machine, sans se connecter au serveur)
+  # --ask-vault-pass est obligatoire meme ici : cibler le groupe webservers
+  # fait charger group_vars/webservers.yml, qui est chiffre.
+  ansible webservers -m ping --ask-vault-pass                  # SUCCESS => pong
+  ansible webservers -b -a "docker ps" --ask-vault-pass        # 4 conteneurs UP
+  ansible webservers -b -a "ufw status" --ask-vault-pass       # 22, 80, 443 seulement
+  ansible webservers -b -a "docker volume ls" --ask-vault-pass # mysql_data, wp_data
+  curl -k -I https://13.60.218.238/           # doit repondre HTTP/1.1 200 ou 302
+
+SI CA BLOQUE SUR "Gathering Facts"
+  rm -rf ~/.ansible/cp            # socket SSH multiplexe fige
+  ansible webservers -m ping --ask-vault-pass    # doit repondre pong
+
+SUPPRIMER
+  ansible-playbook teardown.yml --ask-vault-pass                   (stack + donnees)
+  ansible-playbook teardown.yml --ask-vault-pass -e full_wipe=true (+ Docker et ufw)
+
+  # sans confirmation a taper : ajouter  -e confirm=oui
+
+MACHINE NEUVE (sinon rien a faire)
+  git clone https://github.com/Thomasrbm/Cloud-1.git
+  cd Cloud-1
+  sudo apt install -y ansible
+  ansible-galaxy collection install -r requirements.yml
+  # group_vars/webservers.yml EST dans git (chiffre par ansible-vault) :
+  # rien a recopier, seul le mot de passe du vault est a connaitre.
+
+SI L'IP A CHANGE
+  sed -i 's|13.60.218.238|<NOUVELLE_IP>|' inventory.ini

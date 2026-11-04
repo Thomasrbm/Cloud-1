@@ -9,3 +9,38 @@ domain_name: localhost
 
 http_port: 80
 https_port: 443
+
+# Accès root par clé SSH.
+# Exigé en soutenance : "The student must connect as root ... or login as the
+# root account". Les images cloud (AWS, GCP...) le bloquent par défaut, le rôle
+# ssh_access le réactive. Mot de passe root toujours refusé : clé uniquement.
+allow_root_ssh: true
+
+# --- Le swap -----------------------------------------------------------------
+# Le t3.micro n'a qu'1 Go de RAM et AWS ne fournit aucun swap : un apt install
+# lancé à côté de MySQL suffit à saturer la machine. Ce fichier d'échange sert
+# juste de filet. A mettre à false sur un serveur qui a déjà assez de RAM.
+swap_enabled: true
+swap_file: /swapfile
+swap_size_mb: 2048
+swap_swappiness: 10
+
+# --- Les fichiers compose ----------------------------------------------------
+# Chaque composant apporte le sien, Docker les fusionne dans cet ordre.
+# La liste part dans le .env (COMPOSE_FILE) : du coup un simple
+# docker compose ps voit les 4 services d'un coup.
+compose_files:
+  - docker-compose.yml       # le socle : reseau + volumes  (role stack)
+  - compose.db.yml           # MySQL                        (role db)
+  - compose.wordpress.yml    # php-fpm + wp-cli             (role wordpress)
+  - compose.phpmyadmin.yml   # phpMyAdmin                   (role phpmyadmin)
+  - compose.proxy.yml        # nginx + TLS                  (role proxy)
+
+# --- WordPress ---------------------------------------------------------------
+# Installe automatiquement par wp-cli (role wordpress) : le site est pret a l'emploi
+# des la fin du playbook, sans passer par le formulaire d'installation.
+# wp_admin_password est un secret : il vit dans group_vars/webservers.yml (vault).
+wp_site_url: "https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}"
+wp_site_title: "Cloud-1"
+wp_admin_user: thomas
+wp_admin_email: admin@example.com

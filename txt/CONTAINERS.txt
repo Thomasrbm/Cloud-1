@@ -1,0 +1,103 @@
+CONTENEURS ET ARCHITECTURE : ce qu'on demande en soutenance, et quoi repondre.
+
+
+--- 1. ARCHITECTURE MODULAIRE (un role par composant) ------------------------
+
+Preparation de la machine : ssh_access, docker, ufw
+Stack applicative        : stack (socle), db, wordpress, phpmyadmin, proxy
+
+Chaque composant apporte SON fichier compose ; le socle ne declare que le
+reseau et les volumes. Docker fusionne la liste donnee par COMPOSE_FILE (.env).
+
+Voir la liste des roles
+=> ls roles/
+
+Deployer la base seule
+=> ansible-playbook playbook.yml --tags db --ask-vault-pass
+
+Deployer le proxy seul
+=> ansible-playbook playbook.yml --tags proxy --ask-vault-pass
+
+Voir les fichiers compose fusionnes sur le serveur
+=> ls /opt/wordpress/compose.*.yml
+
+Voir la stack complete telle que Docker la calcule
+=> cd /opt/wordpress && docker compose config --services
+
+
+--- 2. VOLUMES (les donnees survivent a la destruction des conteneurs) -------
+
+mysql_data -> /var/lib/mysql      (la base)
+wp_data    -> /var/www/html       (themes, plugins, uploads)
+Ce sont des volumes NOMMES : visibles et inspectables avec les commandes docker.
+nginx.conf et les certificats restent des bind mounts : c'est de la config,
+pas de la donnee.
+
+Lister les volumes
+=> docker volume ls
+
+Voir ou sont stockees les donnees sur l'hote
+=> docker volume inspect wordpress_wp_data
+
+Voir les montages d'un conteneur
+=> docker inspect -f '{{ json .Mounts }}' wordpress-mysql-1
+
+Preuve de persistance : detruire les conteneurs, les donnees restent
+=> cd /opt/wordpress && docker compose down && docker compose up -d
+
+
+--- 3. IMAGES ET CACHE ------------------------------------------------------
+
+Aucun Dockerfile dans le projet : on utilise les images OFFICIELLES telles
+quelles. Il n'y a donc rien a builder, et aucune couche de cache a ordonner.
+C'est le choix le plus sur : images maintenues et patchees en amont, et un
+`docker compose up` qui ne recompile jamais rien.
+
+Si on devait en ecrire un, la regle serait : les dependances systeme (apt,
+composer, npm install) en HAUT, car elles changent rarement et la couche reste
+en cache ; le code applicatif en BAS, car il change a chaque commit et
+invaliderait tout ce qui suit.
+
+Images choisies, de la plus legere a la plus lourde :
+  nginx:alpine            ~50 Mo    variante Alpine, la plus petite disponible
+  wordpress:cli           ~80 Mo    Alpine, ephemere (profile tools, --rm)
+  wordpress:php8.1-fpm    ~500 Mo   variante fpm : PHP seul, SANS serveur web
+  phpmyadmin:latest       ~570 Mo
+  mysql:8.0               ~600 Mo   pas de variante Alpine officielle
+
+Comparer la taille des images
+=> docker images
+
+Le choix -fpm est deja une optimisation : la variante `wordpress:apache`
+embarque un second serveur web, inutile puisque nginx fait deja ce travail.
+
+
+--- 4. ORCHESTRATION --------------------------------------------------------
+
+Tout lancer d'un coup
+=> cd /opt/wordpress && docker compose up -d
+
+Redemarrer UN seul conteneur
+=> cd /opt/wordpress && docker compose restart nginx
+
+Arreter un seul composant
+=> cd /opt/wordpress && docker compose stop phpmyadmin
+
+Voir l'etat des 4 services
+=> cd /opt/wordpress && docker compose ps
+
+Suivre les logs d'un service
+=> cd /opt/wordpress && docker compose logs -f mysql
+
+
+--- 5. SECURITE RESEAU ------------------------------------------------------
+
+Seul nginx publie des ports (80 et 443). MySQL, WordPress et phpMyAdmin n'ont
+aucune section `ports:` : ils ne sont joignables que sur le reseau interne
+wp_network. Meme si ufw tombait, la base resterait inaccessible d'Internet.
+
+Verifier qu'aucun port MySQL n'est publie
+=> docker ps          # colonne PORTS vide sauf pour nginx
+
+Verifier le pare-feu
+=> ufw status         # 22, 80, 443 uniquement

@@ -1,13 +1,9 @@
 ---
 
-# --- = début de format yamml,  on peut séparer plusieur yaml dans le meme fichier + c'est norme officielle
-
-
 # Bloc 1 : Installation des outils de base
 - name: Install prerequisite packages
   apt: # apt sera la packet manager
   # tout ce qu'on install
-
     name:
       - apt-transport-https # Permet à l'installateur d'aller chercher des paquets via HTTPS
       - ca-certificates     # Gère les certificats de sécurité pour vérifier les sites web
@@ -22,7 +18,7 @@
 
 # Bloc 2 : Dossier stockage  clés de sécurité
 - name: Create keyrings directory
-  file: # file pour mani fichier et dossier sur le srv
+  file: # file pour manip fichier et dossier sur le srv
     path: /etc/apt/keyrings # Le chemin du dossier à créer
     state: directory        # on veut un dossier
     mode: '0755'            # perms lire/ecrire
@@ -32,6 +28,7 @@
 
 
 # Bloc 3 : Dl la clé  sécurité offi de Docker
+# gpg sert a auth l authenticite du depo docker (oblig pour le depot apt)
 # GNU Privacy Guard (un peu comme un hash pour authentifier + garentie en tant que clef qui l'a signé)
 # hash chiffré avec clef de docker
 - name: Add Docker GPG key
@@ -42,12 +39,9 @@
 
 
 
-
-
 # Bloc 4 : Ajout du repo docker offi dans le ubuntu server
 - name: Add Docker apt repository
   apt_repository: # dl un repo
-
     # detecte l archi, check la signature, remplace ansible_distribution_release  par la distrib d'ubuntu (ici jammy)
     # >- =  j'écris sur plusieurs ligne mais ansible doit lire sur une longuge ligne concaténée
     repo: >-

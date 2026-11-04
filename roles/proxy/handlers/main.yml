@@ -1,0 +1,6 @@
+---
+
+- name: Restart nginx
+  command: docker compose restart nginx
+  args:
+    chdir: "{{ project_dir }}"

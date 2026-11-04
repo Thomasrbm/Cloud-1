@@ -1,20 +1,36 @@
 ---
-# Fichier principal d'orchestration pour le projet
 - name: Deploy WordPress stack
   # la cible ( list defini dans inventory.ini )
   hosts: webservers
-  # execute les opération en root sur les servers
   become: true # Requis pour installer des paquets et modifier le pare-feu
-  
 
-  # va chercher dans le dossier roles puis task et executer le main de chaque
-  # sous dossier role/task
+
   roles:
-    # 1. Prépare la machine en installant le moteur Docker
-    - docker
-    
-    # 2. Sécurise le serveur en fermant les ports inutiles (seuls accessible :  22, 80, 443)
-    - ufw
-    
-    # 3. Copie les fichiers de configuration et lance les conteneurs (WordPress, DB, Nginx)
-    - app
+    # --- on prépare la machine -----------------------------------------------
+    # 0. Autorise les clés publiques des autres machines (portable, poste 42)
+    - { role: ssh_access, tags: ['ssh'] }
+
+    # 1. Ajoute un fichier d'échange (1 Go de RAM sur l'EC2, aucun swap fourni)
+    - { role: swap,       tags: ['swap', 'system'] }
+
+    # 2. Prépare la machine en installant le moteur Docker
+    - { role: docker,     tags: ['docker'] }
+
+    # 3. Sécurise le serveur en fermant les ports inutiles (seuls accessible : 22, 80, 443)
+    - { role: ufw,        tags: ['ufw', 'security'] }
+
+    # --- un rôle = un composant de la stack ----------------------------------
+    # 4. Le socle : dossier du projet, .env (secrets), réseau et volumes
+    - { role: stack,      tags: ['stack'] }
+
+    # 5. La base de données MySQL (aucun port publié)
+    - { role: db,         tags: ['db'] }
+
+    # 6. WordPress en php-fpm + l'installation du site par wp-cli
+    - { role: wordpress,  tags: ['wordpress', 'wp'] }
+
+    # 7. L'interface d'administration de la base
+    - { role: phpmyadmin, tags: ['phpmyadmin', 'pma'] }
+
+    # 8. nginx et le TLS : le seul composant exposé sur Internet
+    - { role: proxy,      tags: ['proxy', 'nginx'] }

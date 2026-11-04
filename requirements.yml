@@ -2,4 +2,5 @@
 # Collections nécessaires (module ufw). Installe-les avec :
 #   ansible-galaxy collection install -r requirements.yml
 collections:
-  - name: community.general
+  - name: community.general   # module ufw
+  - name: ansible.posix       # module authorized_key (rôle ssh_access)
