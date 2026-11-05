@@ -1,0 +1,94 @@
+sudo snap install aws-cli --classic
+aws --version
+
+# verifier si peut se co
+aws login --region eu-north-1
+
+
+====> la clef aws  : 
+
+https://console.aws.amazon.com/iam/home#/security_credentials
+
+(compte simplified pour nous donc pas besoin)
+
+
+aws login si besoin
+
+
+===============================
+
+
+
+sudo snap install opentofu --classic
+tofu version
+
+
+quand provider mis dans le main 
+==>
+
+tofu init
+=> packet manager de tofu 
+il dl les provider des clouds used
+il dl les packet hashicorp needed
+(ici .terraform/providers/registry.opentofu.org/hashicorp/aws/5.x.x/)
+les linux sont les binaires des providers
+
+cree le .terraform.lock.hcl  
+(fichier de note de la version)
+
+prepare les modules etc
+
+
+
+
+
+tofu validate
+=> verifie que tout est fonctionnel
+
+
+
+eval "$(aws configure export-credentials --format env)"
+==> verifie si le crendential aws sont charged 
+=> si renvoit rien c est good.
+
+fix :
+aws configure set region eu-north-1
+aws login
+eval "$(aws configure export-credentials --format env)"
+
+eval = cree les var env aws
+
+
+des fois ca  expire donc : 
+
+
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_CREDENTIAL_EXPIRATION
+aws login
+eval "$(aws configure export-credentials --format env)"
+
+
+
+
+# ca simule le apply sans rien toucher 
+tofu plan
+
+# une fois load on peut 
+tofu output
+
+
+
+# applique vraiment
+tofu apply
+
+
+
+
+
+
+========
+
+
+
+creer la clef 
+
+ssh-keygen -t ed25519 -f ~/.ssh/cloud1 -N ""

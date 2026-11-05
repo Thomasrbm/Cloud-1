@@ -10,3 +10,19 @@ mdp.txt
 vault_pass.txt
 cloud1-secrets.txt
 txt/mdp.txt
+
+# OpenTofu / Terraform
+# .terraform.lock.hcl, lui, se commite : il fige les versions des providers.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!example.tfvars
+crash.log
+crash.*.log
+.terraform.tfstate.lock.info
+*.tfplan
+
+# Ansible
+*.retry
