@@ -220,12 +220,15 @@ on construit aucune image , on prend que des offi
 legeres =>
 
 
-find . -name "Dockerfile*"
-
 ansible server1 -b --ask-vault-pass -a "docker images"
 
 
 pas de build:  que des image: 
+
+
+
+
+
 
 
 si avait image : 
@@ -237,6 +240,31 @@ Bon ordre
 
 RUN apt install php  ← en cache, jamais rejoué
 COPY . /app          ← seule couche reconstruite
+
+
+
+
+
+
+sur le server : 
+
+
+cd /opt/wordpress && docker compose up -d    
+
+pas de ligne pulling , docker use le cacje les image deja presente
+
+
+
+alpine image petites : 
+
+
+docker exec wordpress-nginx-1 cat /etc/os-release
+
+
+mysql:8.0	MySQL ne publie pas d’image officielle en alpine
+une version fpm-alpine existe, mais elle casserait le user: "33:33" de wp-cli
+wordpress:cli	déjà basée sur Alpine
+phpmyadmin:latest	la variante plus légère n’a pas de serveur web, il faudrait en ajouter un
 
 
 
