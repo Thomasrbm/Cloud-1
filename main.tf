@@ -1,16 +1,3 @@
-terraform {
-    required_providers {
-        aws = {
-            source = "hashicorp/aws"
-            version = "~> 5.0"
-        }
-    }
-}
-
-
-provider "aws" {
-    region = "eu-north-1"
-}
 
 
 
@@ -32,14 +19,6 @@ data "aws_ami" "ubuntu" {
         values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
     }
 
-}
-
-
-#  dans la stdout pour voir une sortie
-# id de l image en output
-
-output "ami_id" {
-    value = data.aws_ami.ubuntu.id
 }
 
 
@@ -101,12 +80,19 @@ resource "aws_security_group" "web_security" {
 }
 
 resource "aws_instance" "web_instance" {
+
     ami = data.aws_ami.ubuntu.id
+    instance_type = var.instance_type # EC2 mini vps 
+    key_name = aws_key_pair.cloud1.key_name
+    vpc_security_group_ids = [aws_security_group.web_security.id]
 
+    root_block_device {
+        volume_size = var.volume_size  # taille de la / 
+    }
+
+    tags = {
+        Name = "cloud2" # nom de l instance
+    }
 }
 
 
-
-output "ip" {
-
-}

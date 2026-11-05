@@ -84,6 +84,9 @@ tofu apply
 
 
 
+OPEN TOFU LIS TOUS LES .TF mais les traite comme un seul fichier a la fin
+
+
 
 ========
 
