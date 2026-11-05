@@ -14,10 +14,9 @@ on les traduit avec les [modules Ansible](https://docs.ansible.com/ansible/lates
 - **stack** (compose de base) → référence Docker Compose : https://docs.docker.com/compose/compose-file/
 - **swap** → gestion du swap Linux (fallocate / mkswap / swapon) : https://help.ubuntu.com/community/SwapFaq
 - **ufw** → pare-feu UFW : https://help.ubuntu.com/community/UFW
-- **ssh_access** → config du serveur SSH (sshd_config) : https://manpages.ubuntu.com/manpages/noble/en/man5/sshd_config.5.html
 
 ## Modules Ansible utilisés
 
-- `ansible.builtin.apt`, `get_url`, `apt_repository`, `file`, `service`, `template`, `command`, `lineinfile`, `sysctl` : https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
+- `ansible.builtin.apt`, `get_url`, `apt_repository`, `file`, `service`, `template`, `command`, `sysctl` : https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
 - `community.general.ufw` : https://docs.ansible.com/ansible/latest/collections/community/general/ufw_module.html
 - Gérer conteneurs/images en Ansible (non utilisé ici, mais utile) : https://docs.ansible.com/ansible/latest/collections/community/docker/

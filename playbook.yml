@@ -6,9 +6,6 @@
 
 
   roles:
-    # --- on prépare la machine -----------------------------------------------
-    # 0. Autorise les clés publiques des autres machines (portable, poste 42)
-    - { role: ssh_access, tags: ['ssh'] }
 
     # 1. Ajoute un fichier d'échange (1 Go de RAM sur l'EC2, aucun swap fourni)
     - { role: swap,       tags: ['swap', 'system'] }

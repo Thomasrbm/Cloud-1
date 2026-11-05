@@ -147,29 +147,10 @@ Les crédits tiennent donc largement la durée du projet. Réflexes :
 ## Travailler depuis plusieurs machines (PC fixe, portable, poste 42)
 
 La clé `.pem` AWS n'est téléchargeable **qu'une fois** et n'est injectée dans
-l'instance qu'**au lancement**. Plutôt que de recopier cette clé privée partout
-(un seul secret partagé = tout à refaire si une machine est compromise), chaque
-machine garde **sa propre clé**, et on ajoute sa clé **publique** au serveur.
-
-### Sur une nouvelle machine
-
-```sh
-ssh-keygen -t ed25519 -C "portable"     # si pas déjà de clé
-cat ~/.ssh/id_ed25519.pub
-```
-
-- Colle la ligne dans `roles/ssh_access/files/<machine>.pub` (ex. `portable.pub`)
-- Commit + push
-- Relance le playbook **depuis une machine déjà autorisée** :
-  `ansible-playbook playbook.yml --ask-vault-pass`
-- Le rôle `ssh_access` ajoute la clé dans `~/.ssh/authorized_keys` de `ubuntu` :
-  la nouvelle machine peut désormais se connecter **sans le `.pem`**.
-
-Sur cette nouvelle machine, `inventory.ini` devient simplement :
-
-```ini
-server1 ansible_host=<IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_ed25519
-```
+l'instance qu'**au lancement** : seule la machine qui la détient peut déployer.
+Pour travailler depuis une autre machine, il faut y copier ce `.pem`
+(`chmod 400`), ou ajouter à la main sa clé publique dans
+`~/.ssh/authorized_keys` de `ubuntu` sur le serveur.
 
 ### Cas particulier : poste de l'école
 
@@ -177,7 +158,7 @@ server1 ansible_host=<IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ss
 - Solution sans aucune clé locale : console AWS > EC2 > l'instance >
   **Se connecter** > onglet **EC2 Instance Connect** → terminal SSH dans le navigateur.
 
-### Rattrapage : `.pem` perdu et aucune autre clé autorisée
+### Rattrapage : `.pem` perdu
 
 L'instance n'est alors plus joignable en SSH. Deux issues :
 - **EC2 Instance Connect** depuis la console (si le port 22 accepte les plages AWS) ;
@@ -248,33 +229,3 @@ ansible-playbook teardown.yml -e full_wipe=true -e confirm=oui
 
 > Le teardown ne touche ni à l'instance EC2, ni à ton `inventory.ini`, ni aux clés
 > SSH autorisées : seule l'application est détruite.
-
----
-
-## Connexion root (exigence de soutenance)
-
-> *« The student must connect as root using their email address or login as the
-> root account. »*
-
-Les images cloud bloquent volontairement le compte root : la clé est bien dans
-`/root/.ssh/authorized_keys`, mais précédée d'un
-`command="echo 'Please login as the user \"ubuntu\"'"` qui coupe la session.
-
-Le rôle `ssh_access` lève ce blocage au premier déploiement :
-
-- copie les clés publiques autorisées dans `/root/.ssh/authorized_keys` ;
-- retire la commande forcée de l'image cloud ;
-- force `PermitRootLogin prohibit-password` (**clé uniquement, jamais de mot de
-  passe**), y compris dans les fichiers `/etc/ssh/sshd_config.d/*.conf` qui
-  écrasent parfois le réglage principal ;
-- recharge sshd **sans couper** les sessions en cours.
-
-```sh
-ssh -i ~/.ssh/cloud1-aws.pem root@<IP_PUBLIQUE>
-```
-
-Désactivable si besoin : `allow_root_ssh: false` dans `group_vars/all.yml`.
-
-⚠️ Le tout premier `ansible-playbook` se fait forcément avec `ansible_user=ubuntu`
-(root est encore bloqué). Ensuite, tu peux basculer l'inventaire sur
-`ansible_user=root` si tu préfères.

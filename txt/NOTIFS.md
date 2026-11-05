@@ -56,7 +56,6 @@ FIN DU PLAY        → "Recreate stack" s'exécute UNE seule fois
 |---|---|---|
 | `.env` et `docker-compose.yml` (`roles/stack`) | `Recreate stack` | `docker compose up -d --force-recreate` : recrée tous les conteneurs |
 | `nginx.conf` (`roles/proxy`) | `Restart nginx` | `docker compose restart nginx` |
-| config SSH (`roles/ssh_access`) | `Restart sshd` | recharge SSH sans couper la session |
 
 Exemples :
 

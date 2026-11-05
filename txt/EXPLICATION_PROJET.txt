@@ -20,7 +20,6 @@ LANCER
 LES ROLES
 
   Preparation de la machine
-    ssh_access   cles publiques des autres machines + acces root par cle
     docker       depot officiel, moteur Docker et plugin compose
     ufw          deny par defaut, seuls 22 / 80 / 443 ouverts
 

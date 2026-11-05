@@ -95,3 +95,35 @@ OPEN TOFU LIS TOUS LES .TF mais les traite comme un seul fichier a la fin
 creer la clef 
 
 ssh-keygen -t ed25519 -f ~/.ssh/cloud1 -N ""
+
+
+
+===============
+
+
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+
+
+3 to add : 3 ressources vont être créées sur AWS :
+la clé SSH (aws_key_pair.cloud1) ;
+le pare-feu (aws_security_group.web_security) ;
+la VM (aws_instance.web_instance).
+
+
+0 to change : aucune ressource existante ne sera modifiée.
+
+
+
+0 to destroy : rien ne sera supprimé.
+
+
+
+
+
+
+===============
+
+
+tofu destroy

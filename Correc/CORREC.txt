@@ -100,7 +100,6 @@ et 3306 absents.
 
 
 22 est indispensable pour qu'Ansible déploie
-et pour l'accès root exigé
 
 
 ==> car cest le port ssh et ansible ne parle que par ca 
@@ -157,7 +156,7 @@ exec script 2 endroits
 
 modifier dans le inventory.ini
 
-ansible-playbook playbook.yml --limit server2 --skip-tags ssh,ufw --ask-vault-pass
+ansible-playbook playbook.yml --limit server2 --skip-tags ufw --ask-vault-pass
 
 
 

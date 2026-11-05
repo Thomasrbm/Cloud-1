@@ -1,0 +1,46 @@
+
+Ansible :  c est un programm python agentless
+ ( pas tourner sur le pc juste un script) qui execute cmd 
+ pour atteindre l etat desired 
+
+
+LANCER
+  ansible-galaxy collection install -r requirements.yml
+
+    ===> community.general   # → module ufw     (rôle ufw)
+    ===> ansible.posix       # → mount, sysctl  (rôle swap)
+
+    c est les cmds en plus needed
+
+
+
+
+  ansible-playbook playbook.yml --ask-vault-pass
+
+  Ansible lit playbook.yml, s'arrete pour demander le mot de passe du vault,
+  puis charge automatiquement group_vars/ 
+  
+  il execute les roles dans l'ordre.z
+
+
+  Il lit ansible.cfg (config locale), en tire inventory.ini 
+   puis se connecte en SSH a chaque groupe (webservers)
+  (become: true = passe en sudo).
+
+
+
+
+
+
+
+LES ROLES
+
+1. swap        : crée 2 Go de swap (la t3.micro n'a qu'1 Go de RAM)
+2. docker      : installe Docker et Compose depuis le dépôt officiel
+3. ufw         : pare-feu, tout bloqué en entrée sauf 22/80/443
+4. stack       : dossier /opt/wordpress, .env (secrets), réseau et volumes
+5. db          : lance MySQL (aucun port exposé) et attend qu'il réponde
+6. wordpress   : lance php-fpm et installe le site avec wp-cli
+7. phpmyadmin  : lance l'interface web de la base sur /phpmyadmin/
+8. proxy       : certificat TLS, config nginx, seul conteneur exposé (80 → 443)
+

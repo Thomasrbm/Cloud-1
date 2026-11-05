@@ -3,7 +3,7 @@ CONTENEURS ET ARCHITECTURE : ce qu'on demande en soutenance, et quoi repondre.
 
 --- 1. ARCHITECTURE MODULAIRE (un role par composant) ------------------------
 
-Preparation de la machine : ssh_access, docker, ufw
+Preparation de la machine : swap, docker, ufw
 Stack applicative        : stack (socle), db, wordpress, phpmyadmin, proxy
 
 Chaque composant apporte SON fichier compose ; le socle ne declare que le

@@ -1,6 +1,0 @@
----
-# Recharge la config SSH sans couper les sessions en cours.
-- name: Restart sshd
-  service:
-    name: ssh
-    state: reloaded

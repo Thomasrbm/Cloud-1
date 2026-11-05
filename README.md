@@ -4,7 +4,7 @@
 
 **Deploy a complete WordPress stack on a bare cloud instance, in one command — 42 School project.**
 
-*Ansible + Docker Compose on AWS EC2 (Ubuntu 22.04) — nine idempotent roles take a fresh VM to a TLS-terminated WordPress, MySQL and phpMyAdmin stack, with every secret encrypted by Ansible Vault.*
+*Ansible + Docker Compose on AWS EC2 (Ubuntu 22.04) — eight idempotent roles take a fresh VM to a TLS-terminated WordPress, MySQL and phpMyAdmin stack, with every secret encrypted by Ansible Vault.*
 
 </div>
 
@@ -85,7 +85,6 @@ Only official images are used — no `build:`, nothing to rebuild, nothing to ca
 
 | # | Role | Tags | What it does |
 |---|---|---|---|
-| 0 | `ssh_access` | `ssh` | Authorizes each machine's public key (`files/*.pub`) — no shared `.pem`; enables root login **by key only** |
 | 1 | `swap` | `swap` `system` | 2 GB swap file, `swappiness=10` — a t3.micro has 1 GB RAM and no swap |
 | 2 | `docker` | `docker` | Official Docker apt repo + GPG key, Engine and Compose plugin |
 | 3 | `ufw` | `ufw` `security` | Deny incoming by default, allow 22 / 80 / 443 only |
@@ -157,8 +156,7 @@ Running the playbook twice changes nothing the second time — `PLAY RECAP … c
 | `changed_when:` on Docker output | a container is `changed` only if it was `Created`, `Started` or `Recreated` |
 | `wp core is-installed` | WordPress is installed only once |
 | `until:` / `retries:` | waits for WordPress files to be extracted instead of racing them |
-| handlers + `notify` | nginx and sshd restart only when their config actually changed |
-| `validate: sshd -t` | a broken `sshd_config` is refused before it can lock us out |
+| handlers + `notify` | nginx restarts and the stack is recreated only when their config actually changed |
 
 ---
 
@@ -167,9 +165,8 @@ Running the playbook twice changes nothing the second time — `PLAY RECAP … c
 - **Two firewalls**: the AWS Security Group outside, UFW inside — both must allow a port.
 - **MySQL is never exposed**: reachable only on `wp_network`.
 - **HTTP → HTTPS**: port 80 only answers with a `301`.
-- **SSH**: keys only, root login `prohibit-password`; the cloud-image forced command blocking root is stripped, and drop-ins forcing `PermitRootLogin no` are neutralized.
+- **SSH**: keys only, as the `ubuntu` user; root login stays blocked as shipped by the AMI, and `become: true` goes through `sudo`.
 - **Docker data**: `/var/lib/docker` is `drwx--x---`, root only; `.env` is `0600`.
-- **One key per machine**: laptop, desktop and school workstation each add their own public key — revoking one never means rotating all.
 
 > **About the credentials in the commit history.** Earlier versions of `txt/acces.txt` list the WordPress and MySQL passwords in clear text, next to the server's IP. This is deliberate and limited to the school exercise: they were written out so the evaluators could log in and check each point during the defense. They belonged to a **throwaway test server that has since been shut down**, so none of them grants access to anything. We know this is not good practice — outside an evaluation, secrets only live in Ansible Vault, as the rest of this project does.
 
