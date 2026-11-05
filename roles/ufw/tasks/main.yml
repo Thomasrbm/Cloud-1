@@ -5,35 +5,21 @@
 - name: Install ufw
   apt:
     name: ufw
-    state: present
-    # equivalent d un apt update (maj le catalogue local de apt dispo en ligne)
-    update_cache: true
 
-# Bloc 2 : Règle de sécurité pour co entrantes
-- name: Default deny incoming
+# Bloc 2 : Les 3 exceptions
+# (par defaut ufw bloque deja tout ce qui entre et laisse tout sortir)
+- name: Allow SSH, HTTP, HTTPS
   # install en meme temps que ansible , fourre tout maintain par la commu (y a npm yarn etc.)
   community.general.ufw: # Module Ansible spécifique pour configurer UFW
-    direction: incoming  # Cible tout ce qui tente d'entrer
-    policy: deny         # On ferme TOUT par défaut
-
-# Bloc 3 : Règle pour sortante
-- name: Default allow outgoing
-  community.general.ufw:
-    direction: outgoing
-    policy: allow        # On autorise le serveur à sortir sur Internet (ex: pour faire des mises à jour)
-
-# Bloc 4 : Les 3 exceptions
-- name: Allow SSH, HTTP, HTTPS
-  community.general.ufw:
     rule: allow          # exception
     port: "{{ item }}"   # var dynamique remplie en dessous
     proto: tcp
-  loop:                  # boucle qui va remplir item et applique le allow en tcp 
+  loop:                  # boucle qui va remplir item et applique le allow en tcp
     - "22"               # ssh
     - "80"               # http
     - "443"              # tls https
 
-# Bloc 5 : Activation finale du pare-feu
+# Bloc 3 : Activation finale du pare-feu
 - name: Enable ufw
   community.general.ufw:
     state: enabled

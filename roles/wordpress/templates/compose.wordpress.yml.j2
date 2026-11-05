@@ -3,8 +3,6 @@ services:
   wordpress:
     image: wordpress:php8.1-fpm
     restart: always
-    depends_on:
-      - mysql
     environment:
       WORDPRESS_DB_HOST: mysql
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
@@ -23,9 +21,6 @@ services:
     # se declachne que dans la main si Check whether WordPress  fail
     profiles:
       - tools
-    depends_on:
-      - mysql
-      - wordpress
     environment:
       WORDPRESS_DB_HOST: mysql
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}

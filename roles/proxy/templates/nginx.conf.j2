@@ -13,22 +13,19 @@
 
 # HTTP -> redirection HTTPS
 server {
-    listen 80 default_server;   # écoute les visiteurs qui arrivent en HTTP (port 80)
-    server_name _;              # quel que soit le nom de domaine demandé
-    
+    listen 80;   # écoute les visiteurs qui arrivent en HTTP (port 80), quel que soit le nom demandé (seul bloc sur ce port)
+
     # 301 = redirection definitive
-    # force le https 
+    # force le https
     # host = ip server
-    # port sir pas 443
-    # request uri = le chemin / sur le srv 
-    return 301 https://$host{% if https_port | int != 443 %}:{{ https_port }}{% endif %}$request_uri;   
+    # request uri = le chemin / sur le srv
+    return 301 https://$host$request_uri;
 }
 
 
 
 server {
-    listen 443 ssl default_server; # chiffre ce port + est par defaut si aucun autre block server repond 
-    server_name _; # pas de nom precis + tout les port , donc repon tant que ip
+    listen 443 ssl; # chiffre ce port, repond a tout (seul bloc sur ce port)
 
     ssl_certificate     /etc/nginx/ssl/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/key.pem;
@@ -52,21 +49,14 @@ server {
 
 
 
-    # permet d attraper  /phpmyadmin  meme sans le / final pour le rajouter
-    location = /phpmyadmin {
-        return 301 /phpmyadmin/;
-    }
-
-
     #  ^~  = pour tout ce qui commence par ...
+    # /phpmyadmin sans le / final : nginx redirige tout seul vers /phpmyadmin/
     location ^~ /phpmyadmin/ {
         proxy_pass http://phpmyadmin:80/; #  comme ils sont sur 
         # meme reseau docker wp_network juste avec le nom il redirige
         # vers le bon container
         proxy_set_header Host $host; # ip de la requete du nav
-        proxy_set_header X-Real-IP $remote_addr; # ip du mec qui demande   
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; #    si plusieurs intermediare ont les recencent tous 
-        proxy_set_header X-Forwarded-Proto $scheme; #  https 
+        proxy_set_header X-Forwarded-Proto $scheme; #  https
     }
 
 
@@ -87,14 +77,11 @@ server {
     location ~ \.php$ {
         fastcgi_pass wordpress:9000; # envoit a php fpm dans le conteneur
                         # nom du container et port par defaut de fpm
-        
-        fastcgi_index index.php; # si fini par / sans rien => exec index
-    
-        include fastcgi_params; # charge le fichier avec la requete
-        #  GET POST ETC 
 
-        # chemin du fichier a execute 
+        include fastcgi_params; # charge le fichier avec la requete
+        #  GET POST ETC + HTTPS=on (sinon wordpress redirige en boucle)
+
+        # chemin du fichier a execute
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param HTTPS on; # dit que en https sinon ca redirect en boucle
     }
 }

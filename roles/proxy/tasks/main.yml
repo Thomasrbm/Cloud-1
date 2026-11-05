@@ -14,7 +14,6 @@
   file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
   loop:
     - "{{ project_dir }}/nginx"
     - "{{ project_dir }}/ssl"     # certificats
@@ -30,7 +29,7 @@
     openssl req -x509 -nodes -days 365 -newkey rsa:2048
     -keyout {{ project_dir }}/ssl/key.pem
     -out {{ project_dir }}/ssl/cert.pem
-    -subj "/C=FR/ST=LeHavre/L=LeHavre/O=42/CN={{ domain_name }}"
+    -subj "/CN=localhost"
   args:  # control en + sur une cmd
     creates: "{{ project_dir }}/ssl/cert.pem" # si existe deja, refait pas la commande
 
@@ -43,7 +42,6 @@
   template:
     src: nginx.conf.j2                     
     dest: "{{ project_dir }}/nginx/nginx.conf"
-    mode: '0644'
   notify: Restart nginx # appele le handle si changement (pdt le playbook)
 # template compare le fichier et envoi notif que si modif
 
@@ -55,7 +53,6 @@
   template:
     src: compose.proxy.yml.j2
     dest: "{{ project_dir }}/compose.proxy.yml"
-    mode: '0644'
 
 
 
@@ -69,18 +66,3 @@
   changed_when: >
     ('Started' in nginx_up.stderr) or ('Created' in nginx_up.stderr)
     or ('Recreated' in nginx_up.stderr)
-
-
-
-
-
-# Bloc 6 : passe finale sur toute la stack
-# lance tout si certins pas deja lance
-- name: Converge the whole stack
-  command: docker compose up -d --remove-orphans
-  args:
-    chdir: "{{ project_dir }}"
-  register: stack_up
-  changed_when: >
-    ('Started' in stack_up.stderr) or ('Created' in stack_up.stderr)
-    or ('Recreated' in stack_up.stderr)

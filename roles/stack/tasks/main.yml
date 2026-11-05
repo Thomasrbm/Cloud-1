@@ -1,19 +1,11 @@
 ---
 
-# ==============================================================================
-# RÔLE SOCLE (STACK)
-
-# Le dossier du projet, les secrets et le réseau. Aucun conteneur applicatif ici :
-# db, wordpress, phpmyadmin et proxy viennent se brancher dessus juste après.
-# ==============================================================================
-
 
 # Bloc 1 : arborescence
 - name: Create project directory
   file:
     path: "{{ project_dir }}"   # project_dir defini dans groups_var, all.yaml
     state: directory            # On demande la création d'un dossier
-    mode: '0755'                # Permissions standard (root modifie, les autres lisent et entrent)
 
 
 # Bloc 2 : le .env
@@ -33,5 +25,4 @@
   template: # Le module 'template' prend un modèle (.j2), remplace les variables et copie le fichier
     src: docker-compose.yml.j2                 # Le fichier modèle sur ton ordinateur personnel
     dest: "{{ project_dir }}/docker-compose.yml" # La destination sur le serveur distant
-    mode: '0644'
   notify: Recreate stack # Si la config change, Ansible appellera un "handler" pour redémarrer l'app

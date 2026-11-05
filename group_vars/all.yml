@@ -6,13 +6,8 @@
 
 # var use par les roles
 project_dir: /opt/wordpress
-domain_name: localhost
-
-http_port: 80
-https_port: 443
 
 
-swap_enabled: true
 swap_file: /swapfile
 swap_size_mb: 2048
 swap_swappiness: 10
@@ -28,7 +23,7 @@ compose_files:
   - compose.proxy.yml        # nginx + TLS                  (role proxy)
 
 
-wp_site_url: "https://{{ ansible_host }}{% if https_port | int != 443 %}:{{ https_port }}{% endif %}"
+wp_site_url: "https://{{ ansible_host }}"
 wp_site_title: "Cloud-1"
 wp_admin_user: thomas
 wp_admin_email: admin@example.com

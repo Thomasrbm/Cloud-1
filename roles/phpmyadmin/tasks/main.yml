@@ -13,7 +13,6 @@
   template:
     src: compose.phpmyadmin.yml.j2
     dest: "{{ project_dir }}/compose.phpmyadmin.yml"
-    mode: '0644'
 
 
 # Bloc 2 : lance ou maj le docker phpmyadmin

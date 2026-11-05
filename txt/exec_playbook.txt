@@ -102,7 +102,6 @@ skipped   La tache A ETE VOLONTAIREMENT SAUTEE, parce que sa condition
 
           Exemple : le role swap est entierement conditionne par
             when:
-              - swap_enabled | bool
               - ansible_swaptotal_mb | int == 0
           Une fois le swap en place, ansible_swaptotal_mb vaut 2047, la
           condition est fausse, et les 6 taches du role passent en

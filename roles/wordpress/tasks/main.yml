@@ -1,33 +1,11 @@
 ---
 
-# ==============================================================================
-# RÔLE WORDPRESS
-
-# pour les languages interpreted (diff de compiled qui lit une fois et 
-# traduit)
-
-# interet run time (pas gestion memoire, portable)
-# pas memoire => interpreteur fait la gestion car il a les ressources
-# en live
-
-# en compile on sait pas a l avance donc on doit tout gerer
-
-# run time = programme qui lit ton code et execute (l interpreteur)
-# js = node js
-# python = python3
-
-
-# run time php = php fpm
-
-# ==============================================================================
-
 
 # Bloc 1 : copie le compose de WordPress dans le dossier de travail
 - name: Deploy the WordPress compose file
   template:
     src: compose.wordpress.yml.j2
     dest: "{{ project_dir }}/compose.wordpress.yml"
-    mode: '0644'
 
 
 # Bloc 2 : lance ou maj le docker wordpress
@@ -57,22 +35,11 @@
   args:
     chdir: "{{ project_dir }}"
   register: wp_files
-  until: wp_files.rc == 0 
+  until: wp_files.rc == 0
   retries: 30
   delay: 5
   changed_when: false
-  failed_when: false
-
-
-- name: Fail with a clear message if WordPress files never appeared
-  fail:
-    msg: "WordPress n'a pas fini de s'extraire. Verifier : docker compose logs wordpress"
-  when: wp_files.rc != 0
-
-
-
-
-
+  # apres 30 essais rates (150 s), la tache echoue toute seule
 
 
 # ==============================================================================
@@ -132,6 +99,4 @@
   args:
     chdir: "{{ project_dir }}"
   when: wp_is_installed.rc != 0 # Se declahnce que si pas deja cree
-  register: wp_install
-  changed_when: wp_install.rc == 0
   # Rien n'est affiche quand la tache reussit ;

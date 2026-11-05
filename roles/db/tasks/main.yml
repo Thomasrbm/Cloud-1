@@ -13,7 +13,6 @@
   template:
     src: compose.db.yml.j2 # prend le j1 le met au bon endroit pour la cmd docker compose up
     dest: "{{ project_dir }}/compose.db.yml"
-    mode: '0644'
 
 
 # Bloc 2 : lance ou maj le docker mysql
@@ -56,11 +55,4 @@
   retries: 30
   delay: 5
   changed_when: false # n affiche jamais changed (car aucune modif ici)
-  failed_when: false # (pareil)
-
-
-# configure le vrai fail
-- name: Fail with a clear message if MySQL never came up
-  fail:
-    msg: "MySQL n'a pas repondu en 150 s. Verifier : docker compose -f {{ project_dir }}/docker-compose.yml logs mysql"
-  when: mysql_ping.rc != 0 # si dernier return code a echoue
+  # apres 30 essais rates (150 s), la tache echoue toute seule

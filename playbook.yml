@@ -5,29 +5,35 @@
   become: true # Requis pour installer des paquets et modifier le pare-feu
 
 
+
+
+
   roles:
 
-    # 1. Ajoute un fichier d'échange (1 Go de RAM sur l'EC2, aucun swap fourni)
-    - { role: swap,       tags: ['swap', 'system'] }
+    # 1. swap 1go
+    - { role: swap,       tags: ['swap'] }
 
-    # 2. Prépare la machine en installant le moteur Docker
+    # 2. install Docker
     - { role: docker,     tags: ['docker'] }
 
-    # 3. Sécurise le serveur en fermant les ports inutiles (seuls accessible : 22, 80, 443)
-    - { role: ufw,        tags: ['ufw', 'security'] }
+    # 3. pare feu (seuls accessible : 22, 80, 443)
+    - { role: ufw,        tags: ['ufw'] }
 
-    # --- un rôle = un composant de la stack ----------------------------------
-    # 4. Le socle : dossier du projet, .env (secrets), réseau et volumes
+
+
+    # 4.  socle : dossier du projet, .env (secrets), réseau et volumes
     - { role: stack,      tags: ['stack'] }
+
+
 
     # 5. La base de données MySQL (aucun port publié)
     - { role: db,         tags: ['db'] }
 
     # 6. WordPress en php-fpm + l'installation du site par wp-cli
-    - { role: wordpress,  tags: ['wordpress', 'wp'] }
+    - { role: wordpress,  tags: ['wordpress'] }
 
     # 7. L'interface d'administration de la base
-    - { role: phpmyadmin, tags: ['phpmyadmin', 'pma'] }
+    - { role: phpmyadmin, tags: ['phpmyadmin'] }
 
     # 8. nginx et le TLS : le seul composant exposé sur Internet
-    - { role: proxy,      tags: ['proxy', 'nginx'] }
+    - { role: proxy,      tags: ['proxy'] }
